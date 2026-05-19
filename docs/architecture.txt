@@ -1,0 +1,57 @@
+====================================================================
+PROJECT ARCHITECTURE SPECIFICATION: POLYGLOT CODE JOURNAL
+====================================================================
+
+1. COMPONENT FILES
+--------------------------------------------------------------------
+* main.py
+  - Purpose: Contains core application logic, file loading, and UI.
+  - Language: Python
+
+* store.json
+  - Purpose: Standalone database file holding all data.
+  - Format: JSON
+
+2. DATA STORAGE LAYOUT (store.json)
+--------------------------------------------------------------------
+The data uses an inverted-index format to prevent duplicating identical 
+code snippets across multiple similar keywords.
+
+* Concepts Registry (The Core Definitions)
+  - Acts as the master list of programming concepts.
+  - Every entry maps a unique ID to a friendly title and its language implementations.
+  - Target Language Output Order: Python -> Java -> C++
+
+* Keyword Index (The Search Layer)
+  - Maps single lookup terms or keywords back to their master Concept ID.
+  - Example mapping:
+    "def"         -> "function_definition"
+    "function"    -> "function_definition"
+    "void"        -> "function_definition"
+    "for"         -> "definite_iteration"
+    "loop"        -> "definite_iteration"
+
+3. APPLICATION LOGIC FLOW (main.py)
+--------------------------------------------------------------------
+* Initialization & File I/O
+  - Read and parse store.json at application startup.
+  - Implement error handling to catch missing files (FileNotFoundError)
+    or malformed structures (JSONDecodeError) without crashing.
+
+* Input Handling
+  - Maintain a continuous interactive loop (while loop).
+  - Provide a clear terminal prompt explaining how to use the tool.
+  - Sanitize user input by stripping whitespace and lowering text casing.
+  - Detect commands like "exit" or "quit" to end the program execution.
+
+* Search Algorithm
+  - Query the Keyword Index first using the sanitized input.
+  - If found, use the resulting ID to retrieve the code payloads.
+  - If not found, fall back to a partial text match check against titles.
+
+* Output Presentation
+  - Success State: Render a clean layout with the concept name followed 
+    by distinct code syntax blocks for Python, Java, and C++.
+  - Failure State: Output a clear message indicating the term is missing 
+    and prompt the user for a new entry.
+====================================================================

@@ -1,0 +1,21 @@
+--- Personal Code Ontology Journal Activated ---
+
+Enter a concept or tag to lookup (or 'exit'): loop
+
+=== For Loop (Definite Iteration) ===
+Description: Used to iterate over a sequence or a fixed number of times.
+----------------------------------------
+[PYTHON]:
+for i in range(x):
+    print(i)
+
+[JAVA]:
+for (int i = 0; i < x; i++) {
+    System.out.println(i);
+}
+
+[C++]:
+for (int i = 0; i < x; i++) {
+    std::cout << i << std::endl;
+}
+========================================

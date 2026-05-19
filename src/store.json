@@ -1,0 +1,255 @@
+{
+  "concepts" : {
+    "comments_syntax" : {
+        "type" : "syntax",
+        "title" : "Code Comments",
+        "languages" : {
+            "python" : "# Single line comment\n\"\"\"\nMulti-line docstring\n\"\"\"",
+            "java" : "// Single line comment\n/* Multi-line\n   comment */",
+            "cpp" : "// Single line comment\n/* Multi-line\n   comment */",
+            "javascript" : "// Single line comment\n/* Multi-line\n   comment */",
+            "go" : "// Single line comment\n/* Multi-line\n   comment */",
+            "rust" : "// Single line comment\n/* Multi-line\n   comment */"
+        }
+    },
+    "console_output" : {
+        "type" : "syntax",
+        "title" : "Console Printing & String Formatting",
+        "languages" : {
+            "python" : "print(f\"Value is {var}\")  # f-string",
+            "java" : "System.out.printf(\"Value is %d%n\", var);\nSystem.out.println(\"Hello\");",
+            "cpp" : "std::cout << \"Value is \" << var << std::endl;",
+            "javascript" : "console.log(`Value is ${var}`); // Template literal",
+            "go" : "fmt.Printf(\"Value is %d\\n\", var)\nfmt.Println(\"Hello\")",
+            "rust" : "println!(\"Value is {}\", var);"
+        }
+    },
+    "user_input" : {
+        "type" : "syntax",
+        "title" : "Reading Terminal Input",
+        "languages" : {
+            "python" : "user_response = input(\"Enter value: \")",
+            "java" : "Scanner scanner = new Scanner(System.in);\nString input = scanner.nextLine();",
+            "cpp" : "std::string input;\nstd::getline(std::cin, input);",
+            "javascript" : "const readline = require('readline').createInterface({ input: process.stdin, output: process.stdout });\nreadline.question('Enter value: ', input => { readline.close(); });",
+            "go" : "var input string\nfmt.Scanln(&input)",
+            "rust" : "let mut input = String::new();\nstd::io::stdin().read_line(&mut input).unwrap();"
+        }
+    },
+    "function_definition" : {
+        "type" : "syntax",
+        "title" : "Function Declaration",
+        "languages" : {
+            "python" : "def function_name(param):\n    return param",
+            "java" : "public int functionName(int param) {\n    return param;\n}",
+            "cpp" : "int functionName(int param) {\n    return param;\n}",
+            "javascript" : "function functionName(param) {\n    return param;\n}",
+            "go" : "func functionName(param int) int {\n    return param\n}",
+            "rust" : "fn function_name(param: i32) -> i32 {\n    param\n}"
+        }
+    },
+    "for_loop" : {
+        "type" : "syntax",
+        "title" : "For Loop",
+        "languages" : {
+            "python" : "for i in range(0, val):\n    pass",
+            "java" : "for (int i = 0; i < val; i++) {\n}",
+            "cpp" : "for (int i = 0; i < val; i++) {\n}",
+            "javascript" : "for (let i = 0; i < val; i++) {\n}",
+            "go" : "for i := 0; i < val; i++ {\n}",
+            "rust" : "for i in 0..val {\n}"
+        }
+    },
+    "array_handling" : {
+        "type" : "syntax",
+        "title" : "Arrays and Lists (Dynamic)",
+        "languages" : {
+            "python" : {
+                "declaration" : "my_list = [1, 2, 3]",
+                "append" : "my_list.append(4)",
+                "retrieval" : "item = my_list[0]"
+            },
+            "java" : {
+                "declaration" : "ArrayList<Integer> myList = new ArrayList<>(Arrays.asList(1, 2, 3));",
+                "append" : "myList.add(4);",
+                "retrieval" : "int item = myList.get(0);"
+            },
+            "cpp" : {
+                "declaration" : "std::vector<int> myVector = {1, 2, 3};",
+                "append" : "myVector.push_back(4);",
+                "retrieval" : "int item = myVector[0];"
+            },
+            "javascript" : {
+                "declaration" : "const myArray = [1, 2, 3];",
+                "append" : "myArray.push(4);",
+                "retrieval" : "const item = myArray[0];"
+            },
+            "go" : {
+                "declaration" : "mySlice := []int{1, 2, 3}",
+                "append" : "mySlice = append(mySlice, 4)",
+                "retrieval" : "item := mySlice[0]"
+            },
+            "rust" : {
+                "declaration" : "let mut my_vec = vec![1, 2, 3];",
+                "append" : "my_vec.push(4);",
+                "retrieval" : "let item = my_vec[0];"
+            }
+        }
+    },
+    "hash_maps" : {
+        "type" : "syntax",
+        "title" : "Hash Maps and Dictionaries",
+        "languages" : {
+            "python" : {
+                "declaration" : "my_map = {'key': 'value'}",
+                "insertion" : "my_map['new_key'] = 'new_value'",
+                "lookup" : "val = my_map.get('key', default_val)"
+            },
+            "java" : {
+                "declaration" : "HashMap<String, String> myMap = new HashMap<>();",
+                "insertion" : "myMap.put(\"key\", \"value\");",
+                "lookup" : "String val = myMap.getOrDefault(\"key\", \"default\");"
+            },
+            "cpp" : {
+                "declaration" : "std::unordered_map<std::string, std::string> myMap;",
+                "insertion" : "myMap[\"key\"] = \"value\";",
+                "lookup" : "auto it = myMap.find(\"key\"); if(it != myMap.end()) val = it->second;"
+            },
+            "javascript" : {
+                "declaration" : "const myMap = new Map([['key', 'value']]);",
+                "insertion" : "myMap.set('new_key', 'new_value');",
+                "lookup" : "const val = myMap.has('key') ? myMap.get('key') : 'default';"
+            },
+            "go" : {
+                "declaration" : "myMap := map[string]string{\"key\": \"value\"}",
+                "insertion" : "myMap[\"new_key\"] = \"new_value\"",
+                "lookup" : "val, exists := myMap[\"key\"]"
+            },
+            "rust" : {
+                "declaration" : "let mut my_map = HashMap::from([(\"key\", \"value\")]);",
+                "insertion" : "my_map.insert(\"new_key\", \"new_value\");",
+                "lookup" : "let val = my_map.get(\"key\").unwrap_or(&\"default\");"
+            }
+        }
+    },
+    "pytorch_tensors" : {
+        "type" : "syntax",
+        "title" : "PyTorch Tensor Initialization & GPU Routing",
+        "requires_libraries" : "Requires 'torch' package via pip.",
+        "language_notes" : "This framework is specific to Python deep learning workflows.",
+        "languages" : {
+            "python" : {
+                "declaration" : "import torch\ndata = [[1, 2], [3, 4]]\nx_data = torch.tensor(data)",
+                "random_tensor" : "shape = (2,3,)\nrand_tensor = torch.rand(shape)",
+                "gpu_check" : "device = 'cuda' if torch.cuda.is_available() else 'cpu'\ntensor = x_data.to(device)"
+            }
+        }
+    },
+    "gui_window" : {
+        "type" : "syntax",
+        "title" : "Basic Graphical Window Initialization",
+        "requires_libraries" : "Python uses built-in tkinter; Java uses Swing; C++ requires external Qt framework tools.",
+        "languages" : {
+            "python" : "import tkinter as tk\nroot = tk.Tk()\nroot.title('Window')\nroot.geometry('400x300')\nroot.mainloop()",
+            "java" : "import javax.swing.*;\nJFrame frame = new JFrame(\"Window\");\nframe.setSize(400, 300);\nframe.setVisible(true);",
+            "cpp" : "#include <QApplication>\n#include <QWidget>\n// Requires Qt Framework configuration\nQWidget window;\nwindow.resize(400, 300);\nwindow.show();"
+        }
+    },
+    "binary_search" : {
+        "type" : "algorithm", 
+        "title" : "Binary Search",
+        "description" : "A divide-and-conquer algorithm that finds the position of a target value within a sorted array.",
+        "analysis" : {
+            "use_cases" : ["Searching in large, pre-sorted datasets", "Finding boundaries in monotonic functions"],
+            "time_complexity" : "O(log n)",
+            "space_complexity" : "O(1)",
+            "strengths" : ["Incredibly fast for massive datasets", "Does not require extra memory space"],
+            "weaknesses" : ["The dataset MUST be completely sorted first", "Overkill for small arrays"]
+        },
+        "languages" : {
+            "python" : "def binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = left + (right - left) // 2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: left = mid + 1\n        else: right = mid - 1\n    return -1",
+            "java" : "public int binarySearch(int[] arr, int target) {\n    int left = 0, right = arr.length - 1;\n    while (left <= right) {\n        int mid = left + (right - left) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) left = mid + 1;\n        else right = mid - 1;\n    }\n    return -1;\n}",
+            "cpp" : "int binarySearch(const std::vector<int>& arr, int target) {\n    int left = 0, right = arr.size() - 1;\n    while (left <= right) {\n        int mid = left + (right - left) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) left = mid + 1;\n        else right = mid - 1;\n    }\n    return -1;\n}",
+            "javascript" : "function binarySearch(arr, target) {\n    let left = 0, right = arr.length - 1;\n    while (left <= right) {\n        let mid = Math.floor(left + (right - left) / 2);\n        if (arr[mid] === target) return mid;\n        else if (arr[mid] < target) left = mid + 1;\n        else right = mid - 1;\n    }\n    return -1;\n}",
+            "go" : "func binarySearch(arr []int, target int) int {\n    left, right := 0, len(arr)-1\n    for left <= right {\n        mid := left + (right-left)/2\n        if arr[mid] == target {\n            return mid\n        } else if arr[mid] < target {\n            left = mid + 1\n        } else {\n            right = mid - 1\n        }\n    }\n    return -1\n}",
+            "rust" : "fn binary_search(arr: &[i32], target: i32) -> i32 {\n    let mut left = 0;\n    let mut right = arr.len() as i32 - 1;\n    while left <= right {\n        let mid = left + (right - left) / 2;\n        if arr[mid as usize] == target { return mid; }\n        else if arr[mid as usize] < target { left = mid + 1; }\n        else { right = mid - 1; }\n    }\n    -1\n}"
+        }
+    },
+    "two_pointers" : {
+        "type" : "algorithm",
+        "title" : "Two Pointers Technique",
+        "description" : "An algorithmic pattern using two indices to iterate through a data structure simultaneously.",
+        "analysis" : {
+            "use_cases" : ["Finding pairs that sum to a target in a sorted array", "Reversing an array or string in-place"],
+            "time_complexity" : "O(n)",
+            "space_complexity" : "O(1)",
+            "strengths" : ["Drastically reduces nested loop runtime complexity from O(n^2) to O(n)", "Operates entirely in-place"],
+            "weaknesses" : ["Usually requires the underlying array data to be pre-sorted"]
+        },
+        "languages" : {
+            "python" : "def has_target_pair(arr, target):\n    left, right = 0, len(arr) - 1\n    while left < right:\n        current_sum = arr[left] + arr[right]\n        if current_sum == target: return True\n        elif current_sum < target: left += 1\n        else: right -= 1\n    return False",
+            "java" : "public boolean hasTargetPair(int[] arr, int target) {\n    int left = 0, right = arr.length - 1;\n    while (left < right) {\n        int sum = arr[left] + arr[right];\n        if (sum == target) return true;\n        else if (sum < target) left++;\n        else right--;\n    }\n    return false;\n}",
+            "cpp" : "bool hasTargetPair(const std::vector<int>& arr, int target) {\n    int left = 0, right = arr.size() - 1;\n    while (left < right) {\n        int sum = arr[left] + arr[right];\n        if (sum == target) return true;\n        else if (sum < target) left++;\n        else right--;\n    }\n    return false;\n}",
+            "javascript" : "function hasTargetPair(arr, target) {\n    let left = 0, right = arr.length - 1;\n    while (left < right) {\n        let sum = arr[left] + arr[right];\n        if (sum === target) return true;\n        else if (sum < target) left++;\n        else right--;\n    }\n    return false;\n}",
+            "go" : "func hasTargetPair(arr []int, target int) bool {\n    left, right := 0, len(arr)-1\n    for left < right {\n        sum := arr[left] + arr[right]\n        if sum == target {\n            return true\n        } else if sum < target {\n            left++\n        } else {\n            right--\n        }\n    }\n    return false\n}",
+            "rust" : "fn has_target_pair(arr: &[i32], target: i32) -> bool {\n    let mut left = 0;\n    let mut right = arr.len() - 1;\n    while left < right {\n        let sum = arr[left] + arr[right];\n        if sum == target { return true; }\n        else if sum < target { left += 1; }\n        else { right -= 1; }\n    }\n    false\n}"
+        }
+    }
+  },
+  "keyword_index" : {
+    "comment" : "comments_syntax",
+    "comments" : "comments_syntax",
+    "rem" : "comments_syntax",
+
+    "print" : "console_output",
+    "printf" : "console_output",
+    "cout" : "console_output",
+    "display" : "console_output",
+
+    "input" : "user_input",
+    "scanner" : "user_input",
+    "cin" : "user_input",
+    "readline" : "user_input",
+
+    "def" : "function_definition",
+    "function" : "function_definition",
+    "void" : "function_definition",
+    "return" : "function_definition",
+
+    "for" : "for_loop",
+    "loop" : "for_loop",
+    "iterate" : "for_loop",
+
+    "array" : "array_handling",
+    "list" : "array_handling",
+    "index" : "array_handling",
+    "vector" : "array_handling",
+    "append" : "array_handling",
+
+    "map" : "hash_maps",
+    "dict" : "hash_maps",
+    "dictionary" : "hash_maps",
+    "hashmap" : "hash_maps",
+    "lookup" : "hash_maps",
+
+    "torch" : "pytorch_tensors",
+    "tensor" : "pytorch_tensors",
+    "pytorch" : "pytorch_tensors",
+    "cuda" : "pytorch_tensors",
+    "gpu" : "pytorch_tensors",
+
+    "gui" : "gui_window",
+    "window" : "gui_window",
+    "tkinter" : "gui_window",
+    "swing" : "gui_window",
+    "graphics" : "gui_window",
+
+    "search" : "binary_search",
+    "binary" : "binary_search",
+
+    "pointer" : "two_pointers",
+    "pointers" : "two_pointers",
+    "pair" : "two_pointers",
+    "sum" : "two_pointers"
+  }
+}
