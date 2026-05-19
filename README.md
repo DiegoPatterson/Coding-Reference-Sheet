@@ -6,7 +6,7 @@ Instead of a flat document, this journal utilizes an inverted-index ontology mod
 
 ---
 
-## 🚀 Features
+## Features
 
 * **Cross-Language Reference:** View syntax for the exact same programmatic concept across multiple languages side-by-side.
 * **Semantic Tag Mapping (Mini-Ontology):** Search using abstract descriptive keywords (`logic`, `branching`, `loops`) rather than strict language syntax.
@@ -15,7 +15,7 @@ Instead of a flat document, this journal utilizes an inverted-index ontology mod
 
 ---
 
-## 🛠️ Project Architecture
+## Project Architecture
 
 The architecture is split into three core pillars:
 
@@ -25,7 +25,7 @@ The architecture is split into three core pillars:
 
 ---
 
-## 💻 Getting Started
+## Getting Started
 
 ### Prerequisites
 * Python 3.6 or higher installed (No external dependencies or `pip install` required!)
