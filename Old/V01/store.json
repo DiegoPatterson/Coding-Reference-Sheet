@@ -155,6 +155,45 @@
             "cpp" : "#include <QApplication>\n#include <QWidget>\n// Requires Qt Framework configuration\nQWidget window;\nwindow.resize(400, 300);\nwindow.show();"
         }
     },
+    "postgresql_querying" : {
+        "type" : "syntax",
+        "title" : "PostgreSQL Querying & Database Workflow",
+        "description" : "Core PostgreSQL and SQL patterns for connecting, creating objects, querying data, and tuning performance.",
+        "aliases" : ["postgresql", "postgres", "pg", "sql", "psql"],
+        "search_terms" : ["connect", "select", "join", "insert", "update", "delete", "upsert", "transaction", "cte", "window", "index", "schema", "foreign key", "explain analyze", "copy"],
+        "query_languages" : ["sql", "psql"],
+        "requires_libraries" : "PostgreSQL server/client tools. Python users commonly add 'psycopg' or 'psycopg2'; other drivers include 'asyncpg' and 'SQLAlchemy'.",
+        "language_notes" : "SQL snippets use PostgreSQL syntax. psql commands run in the PostgreSQL shell.",
+        "languages" : {
+            "sql" : {
+                "connect" : "postgresql://user:password@localhost:5432/mydb",
+                "create_database" : "CREATE DATABASE my_db;",
+                "create_schema" : "CREATE SCHEMA IF NOT EXISTS app;",
+                "create_table" : "CREATE TABLE users (\n    id BIGSERIAL PRIMARY KEY,\n    email TEXT NOT NULL UNIQUE,\n    active BOOLEAN NOT NULL DEFAULT TRUE,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);",
+                "select_where" : "SELECT id, email FROM users WHERE active = TRUE ORDER BY created_at DESC LIMIT 10;",
+                "joins" : "SELECT o.id, c.email\nFROM orders o\nINNER JOIN customers c ON c.id = o.customer_id;",
+                "group_by" : "SELECT status, COUNT(*)\nFROM orders\nGROUP BY status\nHAVING COUNT(*) > 10;",
+                "insert" : "INSERT INTO users (email, active) VALUES ('ada@example.com', TRUE);",
+                "update" : "UPDATE users SET active = FALSE WHERE id = 42;",
+                "delete" : "DELETE FROM users WHERE id = 42;",
+                "upsert" : "INSERT INTO users (id, email) VALUES (1, 'a@b.com')\nON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;",
+                "transactions" : "BEGIN;\nUPDATE accounts SET balance = balance - 100 WHERE id = 1;\nUPDATE accounts SET balance = balance + 100 WHERE id = 2;\nCOMMIT;",
+                "cte_window" : "WITH ranked AS (\n    SELECT id, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY created_at DESC) AS rn\n    FROM orders\n)\nSELECT * FROM ranked WHERE rn = 1;",
+                "indexing" : "CREATE INDEX idx_users_email ON users (email);\nEXPLAIN ANALYZE SELECT * FROM users WHERE email = 'ada@example.com';",
+                "data_loading" : "COPY users FROM '/path/to/users.csv' WITH (FORMAT csv, HEADER true);"
+            },
+            "psql" : {
+                "connect" : "\\c my_db",
+                "list_databases" : "\\l",
+                "list_tables" : "\\dt",
+                "list_schemas" : "\\dn",
+                "describe_table" : "\\d users",
+                "describe_table_verbose" : "\\d+ users",
+                "run_script" : "\\i /path/to/script.sql",
+                "export_query" : "\\copy (SELECT * FROM users) TO 'users.csv' WITH (FORMAT csv, HEADER true);"
+            }
+        }
+    },
     "binary_search" : {
         "type" : "algorithm", 
         "title" : "Binary Search",
@@ -243,6 +282,23 @@
     "tkinter" : "gui_window",
     "swing" : "gui_window",
     "graphics" : "gui_window",
+
+    "postgres" : "postgresql_querying",
+    "postgresql" : "postgresql_querying",
+    "psql" : "postgresql_querying",
+    "pg" : "postgresql_querying",
+    "sql" : "postgresql_querying",
+    "query" : "postgresql_querying",
+    "database" : "postgresql_querying",
+    "table" : "postgresql_querying",
+    "schema" : "postgresql_querying",
+    "join" : "postgresql_querying",
+    "transaction" : "postgresql_querying",
+    "cte" : "postgresql_querying",
+    "window" : "postgresql_querying",
+    "index" : "postgresql_querying",
+    "upsert" : "postgresql_querying",
+    "copy" : "postgresql_querying",
 
     "search" : "binary_search",
     "binary" : "binary_search",

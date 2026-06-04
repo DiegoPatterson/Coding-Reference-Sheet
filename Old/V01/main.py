@@ -7,31 +7,76 @@ DATA_FILE_PATH = SCRIPT_DIR / "store.json"
 with open(DATA_FILE_PATH, "r") as file:
     database = json.load(file)
 
-# print (database)
-
-# user_input = "  FOR  "
-# clean_input = user_input.strip().lower()
-
-# print(clean_input)
 print("===================================================================================")
 lang_filter = input("Choose a language (or leave blank for ALL): ").strip().lower()
 rough_input = input("What do you want to find: ")
-clean_input = rough_input.strip().lower().replace(" ", "_")   # Cleans up rough input to match dictionary formatting
-index = database.get(clean_input)
-# print(index)
 print("-----------------------------------------------------------------------------------")
+
+
+def normalize_query(text):
+    return " ".join(text.strip().lower().replace("-", " ").replace("/", " ").split())
+
+
+def normalize_key(text):
+    return normalize_query(text).replace(" ", "_")
+
+
+def build_search_blob(concept_key, concept_data):
+    parts = [concept_key, concept_data.get("title", ""), concept_data.get("type", "")]
+
+    for field_name in ("aliases", "search_terms", "query_languages"):
+        field_value = concept_data.get(field_name, [])
+        if isinstance(field_value, str):
+            parts.append(field_value)
+        elif isinstance(field_value, dict):
+            parts.extend(str(key) for key in field_value.keys())
+            parts.extend(str(value) for value in field_value.values() if isinstance(value, str))
+        else:
+            parts.extend(str(item) for item in field_value)
+
+    parts.extend(str(language_name) for language_name in concept_data.get("languages", {}).keys())
+    return normalize_query(" ".join(parts))
+
+
+def find_concept(database, raw_query):
+    concepts = database.get("concepts", {})
+    keyword_index = database.get("keyword_index", {})
+    clean_key = normalize_key(raw_query)
+
+    if clean_key in concepts:
+        return concepts.get(clean_key)
+
+    linked_key = keyword_index.get(clean_key)
+    if linked_key:
+        return concepts.get(linked_key)
+
+    normalized_query = normalize_query(raw_query)
+    if not normalized_query:
+        return None
+
+    query_tokens = normalized_query.split()
+    for concept_key, concept_data in concepts.items():
+        search_blob = build_search_blob(concept_key, concept_data)
+        if all(token in search_blob for token in query_tokens):
+            return concept_data
+
+    for concept_key, concept_data in concepts.items():
+        search_blob = build_search_blob(concept_key, concept_data)
+        if normalized_query in search_blob:
+            return concept_data
+
+    return None
+
+
+def format_label(text):
+    return text.replace("_", " ").title()
+
 
 # isolate sub dictionaries from main dictionaries
 concepts = database.get("concepts", {})
 keyword_index = database.get("keyword_index", {})
 
-# check concept block first incase index unupdated
-found_data = concepts.get(clean_input)
-
-# if not there check keyword
-if not found_data:
-    concept_key = keyword_index.get(clean_input)
-    found_data = concepts.get(concept_key)
+found_data = find_concept(database, rough_input)
 
 if found_data :
     print(f"=== {found_data.get('title')} ===")
@@ -45,6 +90,8 @@ if found_data :
             print(f"(!) PREREQUISITES: {found_data.get('requires_libraries')}")
         if found_data.get("language_notes") :
             print(f"(i) NOTE: {found_data.get('language_notes')}")
+        if found_data.get("query_languages") :
+            print(f"(i) QUERY LANGUAGES: {', '.join(found_data.get('query_languages'))}")
 
         languages = found_data.get("languages", {})
         for lang, code in languages.items() :
@@ -52,7 +99,7 @@ if found_data :
                 print(f"\n[{lang.upper()}]")
                 if isinstance(code, dict):
                     for action, snippet in code.items() :
-                        print(f"    {action.capitalize()}: {snippet}")
+                        print(f"    {format_label(action)}: {snippet}")
                 else:
                     print(code)
 
