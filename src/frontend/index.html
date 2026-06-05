@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeDex • Code Reference Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap');
+    
+    :root { color-scheme: dark; }
+    
+    body {
+      font-family: 'Inter', system_ui, sans-serif;
+    }
+    
+    .mono {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .search-container {
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    .suggestion-item {
+      transition: background-color 0.05s ease;
+    }
+    
+    .suggestion-item:hover, .suggestion-item.selected {
+      background-color: #27272a;
+    }
+
+    .code-block {
+      background-color: #18181b;
+      border: 1px solid #3f3f46;
+    }
+
+    .nav-active {
+      color: #a1a1aa;
+    }
+
+    .concept-card {
+      transition: transform 0.1s ease, border-color 0.1s ease, box-shadow 0.1s ease;
+    }
+    
+    .concept-card:hover {
+      transform: translateY(-1px);
+      border-color: #52525b;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    }
+
+    .section-header {
+      letter-spacing: -.025em;
+    }
+
+    pre code.hljs {
+      background: transparent !important;
+      padding: 0 !important;
+    }
+
+    .lang-pill {
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #27272a;
+      color: #a1a1aa;
+      border: 1px solid #3f3f46;
+    }
+
+    .hamburger-dropdown {
+      animation: dropdownPop 0.1s ease-out forwards;
+    }
+
+    @keyframes dropdownPop {
+      from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .detail-enter {
+      animation: fadeSlide 0.2s ease-out;
+    }
+
+    .search-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(163, 163, 172, 0.1);
+    }
+
+    .ref-logo {
+      font-weight: 700;
+      letter-spacing: -.04em;
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur">
+    <div class="max-w-5xl mx-auto px-4">
+      <div class="flex h-16 items-center gap-4">
+        <!-- Logo (click to home) -->
+        <div onclick="resetToHome()" class="flex items-center gap-2 cursor-pointer select-none">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center">
+            <span class="text-zinc-950 font-bold text-xl leading-none mt-0.5">C</span>
+          </div>
+          <div>
+            <span class="ref-logo text-2xl tracking-tighter">CodeDex</span>
+          </div>
+        </div>
+
+        <!-- Search bar + lang dropdown -->
+        <div class="flex-1 max-w-2xl ml-2">
+          <div class="search-container flex items-center bg-zinc-900 border border-zinc-800 rounded-2xl px-2 py-1.5 focus-within:border-zinc-700 transition-colors">
+            <!-- Search icon -->
+            <div class="pl-3 pr-2 text-zinc-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            <!-- Input -->
+            <input 
+              id="search-input"
+              type="text" 
+              placeholder="Search syntax, concepts, keywords (e.g. ddl, print, loop, select)..."
+              class="search-input flex-1 bg-transparent text-base placeholder:text-zinc-500 outline-none px-1"
+              autocomplete="off"
+              spellcheck="false"
+            >
+
+            <!-- Language filter (far right inside searchbar) -->
+            <div class="flex items-center gap-2 pl-2 border-l border-zinc-800">
+              <select id="lang-filter" 
+                      class="bg-zinc-900 text-sm border border-zinc-800 text-zinc-300 rounded-xl px-3 py-1.5 focus:outline-none focus:border-zinc-700 cursor-pointer">
+                <!-- populated by JS -->
+              </select>
+              <!-- Tiny visible indicator so user can instantly see what backend the page is talking to -->
+              <span id="api-indicator" 
+                    class="text-[10px] text-zinc-600 px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-800 cursor-help"
+                    title="Current API base. If this looks wrong (e.g. port 5432 or empty), hard refresh or edit the 'let API' line in index.html"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hamburger -->
+        <div class="relative">
+          <button id="hamburger-btn"
+                  onclick="toggleHamburgerMenu()"
+                  class="flex items-center justify-center w-10 h-10 rounded-2xl border border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 transition-colors active:bg-zinc-950"
+                  aria-label="Browse by language">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <!-- Hamburger dropdown (collapsible languages) -->
+          <div id="hamburger-menu" 
+               class="hamburger-dropdown hidden absolute right-0 mt-2 w-80 max-h-[70vh] overflow-auto rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/60 z-[60]">
+            <div class="p-2">
+              <div class="px-3 pt-2 pb-1 text-xs uppercase tracking-widest text-zinc-500 font-medium">Browse by language</div>
+              <div id="browse-tree" class="space-y-1 text-sm">
+                <!-- JS populated: details per language -->
+              </div>
+              <div class="pt-2 px-1 text-[10px] text-zinc-600">Click a statement to open it</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="max-w-5xl mx-auto px-4 pt-8 pb-24">
+    <!-- HOME / DISCOVERY VIEW -->
+    <div id="home-view">
+      <div class="max-w-2xl">
+        <div class="mb-6">
+          <h1 class="text-4xl font-semibold tracking-tighter section-header">Your personal code reference engine.</h1>
+          <p class="mt-2 text-lg text-zinc-400">Search across languages. Discover by concept, alias, or category.</p>
+        </div>
+
+        <div class="flex items-center gap-3 text-sm text-zinc-500 mb-4">
+          <div class="flex items-center gap-1.5">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+            <span>Live from your database</span>
+          </div>
+          <span class="text-zinc-800">•</span>
+          <button onclick="document.getElementById('search-input').focus()" 
+                  class="hover:text-zinc-300 transition-colors underline decoration-dotted">Start typing above</button>
+          <span class="text-zinc-800">•</span>
+          <span>Use the <span class="font-medium text-zinc-400">☰</span> menu to browse</span>
+        </div>
+      </div>
+
+      <!-- Quick concepts grid -->
+      <div class="mt-4">
+        <div class="flex items-baseline justify-between mb-3 px-1">
+          <div class="text-sm font-medium text-zinc-400">All concepts in the index</div>
+          <div class="flex items-center gap-2">
+            <div id="concept-count" class="text-xs text-zinc-600"></div>
+            <div id="api-debug" class="text-[10px] text-zinc-500 font-mono"></div>
+          </div>
+        </div>
+
+        <!-- Grid filters (to keep the "all concepts" view clean as data grows) -->
+        <div class="mb-3 flex flex-col sm:flex-row gap-2 items-start">
+          <input 
+            id="grid-filter-input" 
+            type="text" 
+            placeholder="Filter concepts by title or description..." 
+            class="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-sm placeholder:text-zinc-600 focus:border-zinc-700">
+          <div id="type-filter-pills" class="flex gap-1 flex-wrap items-center"></div>
+          <!-- View mode + expand/collapse (proactive for large catalogs) -->
+          <div class="flex gap-1 ml-auto sm:ml-0 items-center">
+            <div class="flex border border-zinc-700 rounded-2xl overflow-hidden text-xs">
+              <button id="view-cards" class="px-2.5 py-1 bg-zinc-800 text-zinc-200">Cards</button>
+              <button id="view-list" class="px-2.5 py-1 text-zinc-500 hover:text-zinc-300">List</button>
+            </div>
+            <button id="expand-all-groups" 
+                    class="text-xs px-2.5 py-1 rounded-2xl border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900">
+              Expand all
+            </button>
+            <button id="collapse-all-groups" 
+                    class="text-xs px-2.5 py-1 rounded-2xl border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900">
+              Collapse all
+            </button>
+          </div>
+        </div>
+
+        <!-- Categories overview (shown when no filters active - keeps front page clean) -->
+        <div id="categories-overview" class="mb-4 hidden">
+          <div class="text-xs font-medium text-zinc-500 mb-2 px-1">Browse by category</div>
+          <div id="category-tiles" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div id="home-grid" 
+             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <!-- Populated by JS: concept cards (grouped or filtered) -->
+        </div>
+
+        <div id="load-more-container" class="mt-4 text-center hidden">
+          <button id="load-more-btn" 
+                  class="text-sm px-4 py-2 rounded-2xl border border-zinc-700 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 transition-colors">
+            Load more
+          </button>
+        </div>
+
+        <div id="home-empty" class="hidden mt-8 text-center text-sm text-zinc-500">
+          No concepts yet. Seed your database and refresh.
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL VIEW (the "pulled up" reference) -->
+    <div id="detail-view" class="hidden">
+      <div class="mb-4 flex items-center justify-between">
+        <button onclick="resetToHome()" 
+                class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back to index</span>
+        </button>
+        <div id="detail-meta-badges" class="flex gap-2"></div>
+      </div>
+
+      <div id="detail-header" class="mb-3">
+        <!-- JS fills title + description -->
+      </div>
+
+      <div id="detail-aliases-tags" class="flex flex-wrap gap-2 mb-6">
+        <!-- pills -->
+      </div>
+
+      <div class="mb-2 text-sm font-medium text-zinc-400 px-1">Implementations</div>
+      <div id="detail-implementations" class="space-y-4">
+        <!-- language cards with code blocks populated here -->
+      </div>
+
+      <div id="detail-sources" class="mt-8 text-xs text-zinc-500"></div>
+    </div>
+  </div>
+
+  <!-- Toast for copy feedback -->
+  <div id="toast" class="hidden fixed bottom-6 right-6 bg-zinc-900 border border-zinc-700 text-sm px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2">
+    <span id="toast-text">Copied to clipboard</span>
+  </div>
+
+  <script>
+    // Tailwind script config
+    function initTailwind() {
+      document.documentElement.style.setProperty('color-scheme', 'dark');
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace']
+            }
+          }
+        }
+      };
+    }
+
+    // ============================================
+    // LINKING THE FRONTEND TO YOUR SERVER / API
+    // ============================================
+    // IMPORTANT: "server" here means the *API server* (the Flask/Python one that
+    // talks to Postgres), NOT the database itself (port 5432).
+    //
+    // By default this points to the CodeDex Flask server on :5000.
+    // If you have "your own server" (e.g. FastAPI, Express, your main app, etc.)
+    // that implements the same API contract, just change the line below.
+    //
+    // The required endpoints are:
+    //   GET /api/languages
+    //   GET /api/concepts
+    //   GET /api/search?q=...&lang=...
+    //   GET /api/concept/<slug>
+    //   GET /api/browse
+    //
+    // When using a separate static server for the frontend (python -m http.server,
+    // VS Code Live Server, vite, etc.) on a different port, you MUST either:
+    //   a) point API to the full URL of your API server (http://127.0.0.1:5000), or
+    //   b) run your API server with CORS enabled for the frontend origin.
+    //
+    // The server.py we provide already enables wide-open CORS for dev.
+    let API = 'http://127.0.0.1:5000';   // <--- CHANGE ONLY if using a *different* API server (use 127.0.0.1 over localhost to avoid IPv6/localhost resolution problems in some browsers)
+
+    // State
+    let allLanguages = [];
+    let currentLangFilter = ''; // code or ''
+    let currentQuery = '';
+    let currentSlug = null;
+    let suggestions = [];
+    let selectedSuggestionIndex = -1;
+
+    // Helper: allow runtime override e.g. ?api=http://localhost:1234
+    (function applyApiOverride() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const override = params.get('api');
+        if (override) {
+          API = override.replace(/\/$/, '');
+          console.log('[CodeDex] API base overridden via ?api= to', API);
+        }
+      } catch (e) {}
+    })();
+
+    // Smart default: if this page is being served from the CodeDex server itself
+    // (port 5000 or 127.0.0.1:5000 etc), use relative URLs. This is the most
+    // reliable when you just run `python src/backend/server.py`.
+    const isServedByCodeDex = location.port === '5000' ||
+                              location.hostname === '127.0.0.1' && location.port === '' ||
+                              location.protocol === 'http:' && location.port === '5000';
+    if (API === 'http://127.0.0.1:5000' && (location.port === '5000' || location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
+      console.log('[CodeDex] Detected served from CodeDex server — using relative API calls');
+      API = '';
+    }
+
+    // Utils
+    function debounce(fn, delay = 220) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      text.textContent = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      setTimeout(() => {
+        toast.classList.remove('flex');
+        toast.classList.add('hidden');
+      }, 1600);
+    }
+
+    async function apiGet(path) {
+      const candidates = [];
+      if (API) candidates.push(API + path);
+      // Always consider relative to current page (useful if Flask serves it, or if someone proxies)
+      candidates.push(path);
+      // Always try the known CodeDex backend locations as fallbacks (in case configured API is wrong, old cached HTML, or 'localhost' vs '127.0.0.1' resolution issues)
+      candidates.push('http://127.0.0.1:5000' + path);
+      candidates.push('http://localhost:5000' + path);
+
+      let lastErr = null;
+      for (const url of candidates) {
+        try {
+          console.log('[CodeDex] Trying fetch:', url);
+          const res = await fetch(url);
+          if (res.ok) {
+            if (url !== (API || '') + path) {
+              console.log('[CodeDex] Success using fallback URL:', url);
+            }
+            return await res.json();
+          } else {
+            const err = await res.json().catch(() => ({}));
+            lastErr = new Error(err.error || `HTTP ${res.status} ${res.statusText} at ${url}`);
+          }
+        } catch (e) {
+          lastErr = e;
+          // continue to next candidate
+        }
+      }
+      console.error('[CodeDex] All API candidates failed for', path, lastErr);
+      throw lastErr || new Error('All API endpoints failed');
+    }
+
+    function updateApiIndicator() {
+      const indicator = document.getElementById('api-indicator');
+      if (indicator) {
+        const display = API || '(same origin)';
+        indicator.textContent = (display.includes('5000') || display === '(same origin)') ? 'API: local' : 'API: ' + display.replace('http://', '').replace('https://', '').slice(0, 20);
+        indicator.title = `Live data from Postgres DB via API at: ${API || '(relative / same origin)'}\nIf the grid shows "Failed to load..." or is empty, hard-refresh the page (Ctrl/Cmd + Shift + R) or edit the "let API" line near the top of this file.`;
+      }
+      const debugEl = document.getElementById('api-debug');
+      if (debugEl) {
+        debugEl.textContent = `live from DB via ${JSON.stringify(API || '(relative)')} @ ${location.host}`;
+      }
+    }
+
+    // Populate language filter dropdown (in search bar far right)
+    async function fetchAndPopulateLanguages() {
+      const sel = document.getElementById('lang-filter');
+      updateApiIndicator(); // set early so user sees the target immediately
+      try {
+        allLanguages = await apiGet('/api/languages');
+      } catch (e) {
+        console.warn('Failed to load languages, using fallback', e);
+        allLanguages = [
+          {code: 'sql', display_name: 'SQL'},
+          {code: 'psql', display_name: 'psql'},
+          {code: 'python', display_name: 'Python'}
+        ];
+        // mark the select so user sees something is wrong
+        setTimeout(() => {
+          sel.style.border = '1px solid #f87171';
+          sel.title = 'FALLBACK MODE — could not reach API. ' + sel.title;
+          updateApiIndicator();
+        }, 0);
+      }
+
+      sel.innerHTML = '';
+      // All option
+      const optAll = document.createElement('option');
+      optAll.value = '';
+      optAll.textContent = 'All languages';
+      sel.appendChild(optAll);
+
+      // Show what backend we're talking to (hover for debug)
+      sel.title = `Talking to API at: ${API || '(relative / same origin)'}. Change "let API" in index.html if needed.`;
+
+      updateApiIndicator();
+
+      allLanguages.forEach(l => {
+        const o = document.createElement('option');
+        o.value = l.code;
+        o.textContent = l.display_name;
+        sel.appendChild(o);
+      });
+
+      sel.addEventListener('change', () => {
+        currentLangFilter = sel.value;
+        // If user is actively searching, re-run the search with new filter
+        const input = document.getElementById('search-input');
+        if (input.value.trim()) {
+          runSearch(input.value.trim());
+        }
+      });
+    }
+
+    // --- Home grid state for scalable filtering/grouping (server-driven) ---
+    let gridConcepts = [];          // accumulated items for the *current* filter view
+    let gridFilterText = '';
+    let activeTypeFilters = new Set(); // empty set = no type filter
+    let gridOffset = 0;
+    const GRID_PAGE_SIZE = 12;
+
+    // types discovered for the pills (we'll refresh them when the unfiltered catalog is loaded)
+    let knownTypes = [];
+
+    // counts per type for the category tiles (populated on initial load)
+    let typesWithCounts = [];
+
+    // View mode for the grid: 'cards' (grouped) or 'list' (compact flat list)
+    let gridViewMode = 'cards';
+
+    function renderHomeGrid(items, totalFromServer) {
+      const grid = document.getElementById('home-grid');
+      const empty = document.getElementById('home-empty');
+      const countEl = document.getElementById('concept-count');
+      grid.innerHTML = '';
+      empty.classList.add('hidden');
+
+      const total = (typeof totalFromServer === 'number') ? totalFromServer : (allConcepts ? allConcepts.length : items.length);
+
+      if (!items || !items.length) {
+        empty.classList.remove('hidden');
+        countEl.textContent = `0 / ${total}`;
+        return;
+      }
+
+      // Group the *current page's* items (grouping still happens client-side for nice headers)
+      const groups = {};
+      items.forEach(c => {
+        const type = c.concept_type || 'other';
+        if (!groups[type]) groups[type] = [];
+        groups[type].push(c);
+      });
+
+      const typeOrder = ['syntax', 'ddl', 'dml', 'query', 'other'];
+      const sortedTypes = Object.keys(groups).sort((a, b) => {
+        const ia = typeOrder.indexOf(a);
+        const ib = typeOrder.indexOf(b);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
+      });
+
+      let shownInThisRender = 0;
+      sortedTypes.forEach(type => {
+        const typeConcepts = groups[type];
+        shownInThisRender += typeConcepts.length;
+
+        const groupWrapper = document.createElement('div');
+        groupWrapper.className = 'col-span-full';
+
+        const header = document.createElement('div');
+        header.className = 'mt-4 first:mt-0 mb-1 px-1 flex items-center gap-2 cursor-pointer select-none hover:text-zinc-300 group-collapsed';
+        header.innerHTML = `
+          <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500">${escapeHtml(type)}</span>
+          <span class="text-[10px] text-zinc-600">(${typeConcepts.length})</span>
+          <span class="ml-auto text-[10px] text-zinc-600 group-collapsed:hidden">−</span>
+          <span class="ml-auto text-[10px] text-zinc-600 hidden group-collapsed:inline">+</span>
+        `;
+        groupWrapper.appendChild(header);
+
+        const cardsContainer = document.createElement('div');
+        if (gridViewMode === 'list') {
+          cardsContainer.className = 'flex flex-col gap-1 hidden';  // dense list, start collapsed
+        } else {
+          cardsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 hidden';  // start collapsed by default for cleanliness
+        }
+
+        typeConcepts.forEach(c => {
+          if (gridViewMode === 'list') {
+            // Compact list row
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between gap-3 px-3 py-2 border border-zinc-800 bg-zinc-900 hover:bg-zinc-950 rounded-2xl text-sm cursor-pointer';
+            row.innerHTML = `
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-medium truncate">${escapeHtml(c.title)}</span>
+                ${c.concept_type ? `<span class="lang-pill text-[10px] shrink-0 cursor-pointer" data-type="${escapeHtml(c.concept_type)}">${escapeHtml(c.concept_type)}</span>` : ''}
+              </div>
+              <div class="flex items-center gap-2 text-xs text-zinc-500 min-w-0">
+                <span class="truncate max-w-[320px]">${escapeHtml((c.description || '').slice(0, 80))}${(c.description || '').length > 80 ? '…' : ''}</span>
+                <span class="shrink-0">·</span>
+                <span class="shrink-0">${c.available_langs ? c.available_langs.length : 0} lang(s)</span>
+              </div>
+            `;
+            row.onclick = (ev) => {
+              if (ev.target.closest('.lang-pill')) return;
+              loadConceptDetail(c.slug);
+              const input = document.getElementById('search-input');
+              if (!input.value.trim()) input.value = c.title;
+            };
+
+            const listTypePill = row.querySelector('.lang-pill[data-type]');
+            if (listTypePill) {
+              listTypePill.onclick = (ev) => {
+                ev.stopImmediatePropagation();
+                const t = listTypePill.dataset.type;
+                if (activeTypeFilters.has(t)) {
+                  activeTypeFilters.delete(t);
+                } else {
+                  activeTypeFilters.add(t);
+                }
+                applyGridFilters();
+              };
+            }
+
+            cardsContainer.appendChild(row);
+          } else {
+            // Card view (original)
+            const card = document.createElement('div');
+            card.className = 'concept-card group cursor-pointer border border-zinc-800 bg-zinc-900 hover:bg-zinc-950 rounded-3xl p-4 flex flex-col';
+            card.innerHTML = `
+              <div class="flex-1">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="font-semibold text-lg leading-tight tracking-tight pr-2">${escapeHtml(c.title)}</div>
+                  ${c.concept_type ? `<span class="lang-pill mt-0.5 shrink-0 cursor-pointer" data-type="${escapeHtml(c.concept_type)}">${escapeHtml(c.concept_type)}</span>` : ''}
+                </div>
+                <div class="mt-1.5 text-sm text-zinc-400 line-clamp-2">${escapeHtml(c.description || '')}</div>
+              </div>
+              <div class="mt-3 pt-3 border-t border-zinc-800 flex items-center gap-1.5 text-xs">
+                ${c.available_langs && c.available_langs.length ? 
+                  c.available_langs.map(l => `<span class="lang-pill">${escapeHtml(l.display_name || l.code)}</span>`).join('') : 
+                  '<span class="text-zinc-600">no snippets yet</span>'}
+              </div>
+            `;
+
+            card.onclick = (ev) => {
+              if (ev.target.closest('.lang-pill')) return;
+              loadConceptDetail(c.slug);
+              const input = document.getElementById('search-input');
+              if (!input.value.trim()) input.value = c.title;
+            };
+
+            const typePill = card.querySelector('.lang-pill[data-type]');
+            if (typePill) {
+              typePill.onclick = (ev) => {
+                ev.stopImmediatePropagation();
+                const t = typePill.dataset.type;
+                if (activeTypeFilters.has(t)) {
+                  activeTypeFilters.delete(t);
+                } else {
+                  activeTypeFilters.add(t);
+                }
+                applyGridFilters();
+              };
+            }
+
+            cardsContainer.appendChild(card);
+          }
+        });
+
+        groupWrapper.appendChild(cardsContainer);
+        grid.appendChild(groupWrapper);
+
+        header.onclick = () => {
+          cardsContainer.classList.toggle('hidden');
+          header.classList.toggle('group-collapsed');
+        };
+      });
+
+      // shown in this render vs total from server
+      countEl.textContent = `${shownInThisRender} / ${total}`;
+    }
+
+    function applyGridFilters(resetPagination = true) {
+      if (resetPagination) {
+        gridOffset = 0;
+        gridConcepts = [];
+      }
+
+      const url = buildConceptsQuery();
+
+      // fetch the current page for this filter state
+      apiGet(url).then(response => {
+        const pageItems = response.items || response; // support both old array and new {items,total} shape
+        const total = response.total || (response.items ? response.items.length : (allConcepts ? allConcepts.length : pageItems.length));
+
+        // append this page to our view's accumulated list (for the current filter)
+        gridConcepts = gridConcepts.concat(pageItems);
+
+        // update known types if we fetched without a type filter (first load or cleared)
+        if (activeTypeFilters.size === 0 && !gridFilterText) {
+          const discovered = [...new Set(pageItems.map(c => c.concept_type).filter(Boolean))];
+          knownTypes = Array.from(new Set([...knownTypes, ...discovered])).sort();
+          buildTypeFilterPillsFromList(knownTypes);
+        }
+
+        renderHomeGrid(gridConcepts, total);
+
+        // update load-more visibility
+        updateLoadMoreUI(gridConcepts.length, total);
+
+        // show/hide category tiles based on current filter state
+        // (we pass the last known counts; for exact we could re-fetch, but this is good enough)
+        renderCategoryTiles(typesWithCounts.length ? typesWithCounts : knownTypes.map(t => ({type: t, count: 0})));
+      }).catch(e => {
+        console.error(e);
+        // fall back to showing error in the grid area (reuse previous error rendering if present)
+        const grid = document.getElementById('home-grid');
+        if (grid) {
+          grid.innerHTML = `<div class="col-span-full text-sm text-red-400 px-2">Failed to load concepts. ${e.message || ''}</div>`;
+        }
+      });
+    }
+
+    function updateLoadMoreUI(currentLoaded, total) {
+      const container = document.getElementById('load-more-container');
+      const btn = document.getElementById('load-more-btn');
+      if (!container || !btn) return;
+
+      if (currentLoaded < total) {
+        container.classList.remove('hidden');
+        btn.textContent = `Load more (${total - currentLoaded} remaining)`;
+        // ensure we don't stack listeners
+        btn.onclick = () => {
+          gridOffset += GRID_PAGE_SIZE;
+          // fetch next page for the *same* filter
+          const url = buildConceptsQuery();
+          apiGet(url).then(response => {
+            const more = response.items || response;
+            gridConcepts = gridConcepts.concat(more);
+            renderHomeGrid(gridConcepts, response.total || total);
+            updateLoadMoreUI(gridConcepts.length, response.total || total);
+          }).catch(console.error);
+        };
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    function setupGridFilters() {
+      const input = document.getElementById('grid-filter-input');
+      if (input) {
+        input.addEventListener('input', () => {
+          gridFilterText = input.value;
+          applyGridFilters();
+        });
+      }
+    }
+
+    function buildConceptsQuery() {
+      const params = new URLSearchParams();
+      if (gridFilterText && gridFilterText.trim()) {
+        params.set('q', gridFilterText.trim());
+      }
+      if (activeTypeFilters.size > 0) {
+        // send as repeated ?type=foo&type=bar (backend supports list)
+        activeTypeFilters.forEach(t => params.append('type', t));
+      }
+      params.set('limit', GRID_PAGE_SIZE);
+      params.set('offset', gridOffset);
+      return `/api/concepts?${params.toString()}`;
+    }
+
+    // (buildTypeFilterPillsFromList is the active version used with server pagination)
+
+    // Load the home grid (now uses server-side pagination + filtering for scalability)
+    async function loadHomeGrid() {
+      const grid = document.getElementById('home-grid');
+      const empty = document.getElementById('home-empty');
+      const countEl = document.getElementById('concept-count');
+      grid.innerHTML = '';
+      empty.classList.add('hidden');
+      updateApiIndicator();
+
+      // reset filter/pagination state
+      gridFilterText = '';
+      activeTypeFilters.clear();
+      gridOffset = 0;
+      gridConcepts = [];
+      const filterInput = document.getElementById('grid-filter-input');
+      if (filterInput) filterInput.value = '';
+
+      // Discover types + counts for the category tiles and pills (unfiltered)
+      try {
+        const typeDiscovery = await apiGet('/api/concepts?limit=100'); // enough to compute counts while catalog is small
+        const items = typeDiscovery.items || typeDiscovery;
+        const counts = {};
+        items.forEach(c => {
+          const t = c.concept_type || 'other';
+          counts[t] = (counts[t] || 0) + 1;
+        });
+        typesWithCounts = Object.keys(counts).sort().map(t => ({ type: t, count: counts[t] }));
+        knownTypes = typesWithCounts.map(x => x.type);
+        buildTypeFilterPillsFromList(knownTypes);
+      } catch (e) {
+        console.warn('Could not discover types for pills/tiles', e);
+      }
+
+      // Show category tiles if no filters yet (keeps the front page clean)
+      renderCategoryTiles(typesWithCounts);
+
+      // Now load the first page for the current (empty) filter
+      gridOffset = 0;
+      const url = buildConceptsQuery();
+      try {
+        const response = await apiGet(url);
+        const page = response.items || response;
+        const total = response.total || page.length;
+
+        gridConcepts = page;
+        renderHomeGrid(gridConcepts, total);
+        updateLoadMoreUI(gridConcepts.length, total);
+
+        // wire text filter
+        setupGridFilters();
+
+        // wire view mode toggle
+        const viewCards = document.getElementById('view-cards');
+        const viewList = document.getElementById('view-list');
+        if (viewCards) {
+          viewCards.onclick = () => {
+            gridViewMode = 'cards';
+            viewCards.classList.add('bg-zinc-800', 'text-zinc-200');
+            viewCards.classList.remove('text-zinc-500');
+            if (viewList) {
+              viewList.classList.remove('bg-zinc-800', 'text-zinc-200');
+              viewList.classList.add('text-zinc-500');
+            }
+            renderHomeGrid(gridConcepts, /* total */ gridConcepts.length); // re-render current set
+          };
+        }
+        if (viewList) {
+          viewList.onclick = () => {
+            gridViewMode = 'list';
+            viewList.classList.add('bg-zinc-800', 'text-zinc-200');
+            viewList.classList.remove('text-zinc-500');
+            if (viewCards) {
+              viewCards.classList.remove('bg-zinc-800', 'text-zinc-200');
+              viewCards.classList.add('text-zinc-500');
+            }
+            renderHomeGrid(gridConcepts, /* total */ gridConcepts.length);
+          };
+        }
+
+        // initial button state
+        if (viewCards && gridViewMode === 'cards') {
+          viewCards.classList.add('bg-zinc-800', 'text-zinc-200');
+          viewCards.classList.remove('text-zinc-500');
+        }
+        if (viewList && gridViewMode === 'list') {
+          viewList.classList.add('bg-zinc-800', 'text-zinc-200');
+          viewList.classList.remove('text-zinc-500');
+        }
+
+        // wire expand/collapse all (for when the catalog gets large)
+        const expandAll = document.getElementById('expand-all-groups');
+        const collapseAll = document.getElementById('collapse-all-groups');
+        if (expandAll) {
+          expandAll.onclick = () => {
+            document.querySelectorAll('#home-grid .grid, #home-grid .flex.flex-col').forEach(el => el.classList.remove('hidden'));
+            document.querySelectorAll('#home-grid .mt-4').forEach(h => h.classList.remove('group-collapsed'));
+          };
+        }
+        if (collapseAll) {
+          collapseAll.onclick = () => {
+            document.querySelectorAll('#home-grid .grid, #home-grid .flex.flex-col').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('#home-grid .mt-4').forEach(h => h.classList.add('group-collapsed'));
+          };
+        }
+
+        countEl.textContent = `${gridConcepts.length} / ${total}`;
+
+        // decide tiles vs detailed grid for the initial no-filter state
+        renderCategoryTiles(typesWithCounts.length ? typesWithCounts : knownTypes.map(t => ({type: t, count: 0})));
+      } catch (e) {
+        console.error(e);
+        const tried = (API || '(relative)') + '/api/concepts';
+        let extra = '';
+        if (location.port === '5500' || location.port === '8080' || location.port === '3000') {
+          extra = `<br><span class="text-amber-400 text-xs">You appear to be using Live Server or another static server on port ${location.port}.<br>
+          Append <code>?api=http://127.0.0.1:5000</code> to the URL, or change the <code>let API</code> line.</span>`;
+        }
+        grid.innerHTML = `
+          <div class="col-span-full text-sm text-red-400 px-2">
+            Failed to load concepts from database.<br>
+            <span class="text-xs text-red-500/70">Tried: ${tried}</span><br>
+            <span class="text-xs">Is the API server running? (python src/backend/server.py)<br>
+            Using your own server? Check the <code>let API = 'http://...'</code> line at the top of this file.<br>
+            <button onclick="location.reload()" class="mt-2 text-xs underline text-red-300 hover:text-red-100">Try again / hard refresh</button>
+            ${extra}
+          </div>`;
+        updateApiIndicator();
+      }
+    }
+
+    // Helper used by the new server-driven pills
+    function buildTypeFilterPillsFromList(types) {
+      const container = document.getElementById('type-filter-pills');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (!types || types.length <= 1) return;
+
+      const clear = document.createElement('button');
+      clear.className = `text-xs px-2.5 py-1 rounded-2xl border transition-colors ${activeTypeFilters.size === 0 ? 'bg-zinc-800 border-zinc-700 text-zinc-200' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'}`;
+      clear.textContent = 'All';
+      clear.onclick = () => {
+        activeTypeFilters.clear();
+        applyGridFilters();
+        buildTypeFilterPillsFromList(types);
+      };
+      container.appendChild(clear);
+
+      types.forEach(type => {
+        const pill = document.createElement('button');
+        const isActive = activeTypeFilters.has(type);
+        pill.className = `text-xs px-2.5 py-1 rounded-2xl border transition-colors ${isActive ? 'bg-emerald-900/40 border-emerald-800 text-emerald-300' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'}`;
+        pill.textContent = type;
+        pill.onclick = () => {
+          if (activeTypeFilters.has(type)) {
+            activeTypeFilters.delete(type);
+          } else {
+            activeTypeFilters.add(type);
+          }
+          applyGridFilters();
+          buildTypeFilterPillsFromList(types);
+        };
+        container.appendChild(pill);
+      });
+    }
+
+    // Build the "Categories" tiles shown when no filters are active.
+    // Clicking a tile sets that type filter (so the grid below populates with just that category).
+    // We also show 1-2 small preview examples under each tile so the front page feels useful without a giant list.
+    function renderCategoryTiles(typesWithCounts) {
+      const overview = document.getElementById('categories-overview');
+      const tilesContainer = document.getElementById('category-tiles');
+      const detailedGrid = document.getElementById('home-grid');
+      const loadMore = document.getElementById('load-more-container');
+
+      if (!overview || !tilesContainer) return;
+
+      if (!typesWithCounts || typesWithCounts.length === 0) {
+        overview.classList.add('hidden');
+        return;
+      }
+
+      // Only show the overview when there are no active filters (clean "front page")
+      const hasActiveFilter = gridFilterText.trim() || activeTypeFilters.size > 0;
+      if (hasActiveFilter) {
+        overview.classList.add('hidden');
+        if (detailedGrid) detailedGrid.classList.remove('hidden');
+        if (loadMore) loadMore.classList.remove('hidden');
+        return;
+      }
+
+      tilesContainer.innerHTML = '';
+      overview.classList.remove('hidden');
+      if (detailedGrid) detailedGrid.classList.add('hidden'); // hide the full list until filtered
+      if (loadMore) loadMore.classList.add('hidden');
+
+      typesWithCounts.forEach(({ type, count }) => {
+        const tile = document.createElement('div');
+        tile.className = 'px-3 py-2 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-sm w-full sm:w-auto';
+
+        // Find 1-2 example titles for this type from the last unfiltered discovery if possible
+        // (we don't store full items globally for simplicity; we show count + click to explore)
+        const examples = ''; // we can enhance later to pull real examples
+
+        tile.innerHTML = `
+          <button class="w-full text-left">
+            <div class="flex items-baseline justify-between gap-2">
+              <span class="font-medium">${escapeHtml(type)}</span>
+              <span class="text-xs text-zinc-500 shrink-0">(${count})</span>
+            </div>
+            <div class="text-[10px] text-zinc-500 mt-0.5">Click to browse this category</div>
+          </button>
+        `;
+
+        // Clicking the whole tile acts as the filter
+        tile.onclick = () => {
+          activeTypeFilters.add(type);
+          applyGridFilters();
+        };
+
+        tilesContainer.appendChild(tile);
+      });
+
+      // Small hint
+      const hint = document.createElement('div');
+      hint.className = 'text-[10px] text-zinc-600 px-1 mt-1 col-span-full';
+      hint.textContent = 'Click a category to filter the list below, or use the search bar at the top for quick find.';
+      tilesContainer.appendChild(hint);
+    }
+
+    // Run search and show suggestions dropdown
+    let searchAbort = null;
+    async function runSearch(q) {
+      currentQuery = q;
+      const container = document.getElementById('search-suggestions');
+      if (!container) createSuggestionsContainer();
+
+      const dropdown = document.getElementById('search-suggestions');
+      dropdown.innerHTML = `<div class="px-4 py-3 text-sm text-zinc-500">Searching…</div>`;
+      dropdown.classList.remove('hidden');
+
+      selectedSuggestionIndex = -1;
+
+      try {
+        let url = `/api/search?q=${encodeURIComponent(q)}`;
+        if (currentLangFilter) url += `&lang=${encodeURIComponent(currentLangFilter)}`;
+        const results = await apiGet(url);
+        suggestions = results;
+
+        if (!results.length) {
+          dropdown.innerHTML = `
+            <div class="px-4 py-3 text-sm">
+              <div class="text-zinc-400">No matches for <span class="font-medium text-zinc-300">"${escapeHtml(q)}"</span></div>
+              <div class="text-xs text-zinc-600 mt-1">Try a broader keyword or use the ☰ menu to explore by language.</div>
+            </div>`;
+          return;
+        }
+
+        dropdown.innerHTML = '';
+        results.forEach((item, idx) => {
+          const el = document.createElement('div');
+          el.className = `suggestion-item px-4 py-3 cursor-pointer border-b border-zinc-800 last:border-b-0 flex flex-col gap-0.5`;
+          el.dataset.index = idx;
+
+          const langBadges = (item.available_langs || []).map(l => 
+            `<span class="lang-pill text-[10px] px-1.5">${escapeHtml(l.display_name || l.code)}</span>`
+          ).join('');
+
+          el.innerHTML = `
+            <div class="flex items-baseline gap-2">
+              <div class="font-semibold text-base">${escapeHtml(item.title)}</div>
+              ${item.concept_type ? `<span class="text-[10px] px-1.5 py-px rounded bg-zinc-800 text-zinc-400">${escapeHtml(item.concept_type)}</span>` : ''}
+            </div>
+            <div class="text-sm text-zinc-400 line-clamp-1">${escapeHtml(item.description || '')}</div>
+            <div class="flex items-center gap-1.5 mt-1">
+              ${langBadges}
+              ${item.available_langs && item.available_langs.length ? '' : '<span class="text-[10px] text-amber-400/70">no impls</span>'}
+            </div>
+          `;
+
+          el.onclick = () => selectSuggestion(idx);
+          el.onmouseenter = () => {
+            selectedSuggestionIndex = idx;
+            highlightSelectedSuggestion();
+          };
+
+          dropdown.appendChild(el);
+        });
+      } catch (e) {
+        console.error(e);
+        dropdown.innerHTML = `<div class="px-4 py-3 text-sm text-red-400">Search failed. Is the backend running?</div>`;
+      }
+    }
+
+    function createSuggestionsContainer() {
+      // Attach dropdown to the search-container itself for correct positioning below the input
+      const searchContainer = document.querySelector('.search-container');
+      let dropdown = document.getElementById('search-suggestions');
+      if (dropdown) return dropdown;
+
+      // Make the search container the positioning context
+      searchContainer.style.position = 'relative';
+
+      dropdown = document.createElement('div');
+      dropdown.id = 'search-suggestions';
+      dropdown.className = `hidden absolute z-[70] top-[calc(100%+4px)] left-0 w-full bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden text-sm`;
+      searchContainer.appendChild(dropdown);
+
+      // Close on outside click
+      document.addEventListener('click', (ev) => {
+        if (!dropdown.contains(ev.target) && !document.getElementById('search-input').contains(ev.target)) {
+          dropdown.classList.add('hidden');
+        }
+      }, { capture: true });
+
+      return dropdown;
+    }
+
+    function highlightSelectedSuggestion() {
+      const dropdown = document.getElementById('search-suggestions');
+      if (!dropdown) return;
+      Array.from(dropdown.children).forEach((child, i) => {
+        if (parseInt(child.dataset.index) === selectedSuggestionIndex) {
+          child.classList.add('selected');
+          child.scrollIntoView({ block: 'nearest' });
+        } else {
+          child.classList.remove('selected');
+        }
+      });
+    }
+
+    function selectSuggestion(idx) {
+      const item = suggestions[idx];
+      if (!item) return;
+
+      const dropdown = document.getElementById('search-suggestions');
+      if (dropdown) dropdown.classList.add('hidden');
+
+      // Keep the query text (like google)
+      const input = document.getElementById('search-input');
+      input.value = item.title || currentQuery;
+
+      loadConceptDetail(item.slug);
+    }
+
+    // Keyboard handling for suggestions
+    function setupSearchKeyboard() {
+      const input = document.getElementById('search-input');
+      const dropdown = () => document.getElementById('search-suggestions');
+
+      input.addEventListener('keydown', (e) => {
+        const dd = dropdown();
+        const isOpen = dd && !dd.classList.contains('hidden') && suggestions.length;
+
+        if (e.key === 'ArrowDown' && isOpen) {
+          e.preventDefault();
+          selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+          highlightSelectedSuggestion();
+        } else if (e.key === 'ArrowUp' && isOpen) {
+          e.preventDefault();
+          selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, 0);
+          highlightSelectedSuggestion();
+        } else if (e.key === 'Enter') {
+          if (isOpen && selectedSuggestionIndex >= 0) {
+            e.preventDefault();
+            selectSuggestion(selectedSuggestionIndex);
+          } else if (currentQuery.trim() && suggestions.length) {
+            // pick first
+            e.preventDefault();
+            selectSuggestion(0);
+          }
+        } else if (e.key === 'Escape') {
+          if (isOpen) {
+            dd.classList.add('hidden');
+          } else {
+            input.value = '';
+            resetToHome();
+          }
+        }
+      });
+
+      // Input listener (debounced search)
+      const debounced = debounce((val) => {
+        const q = val.trim();
+        if (q.length >= 1) {
+          runSearch(q);
+        } else {
+          const dd = dropdown();
+          if (dd) dd.classList.add('hidden');
+          suggestions = [];
+          selectedSuggestionIndex = -1;
+        }
+      }, 180);
+
+      input.addEventListener('input', (e) => {
+        debounced(e.target.value);
+      });
+
+      // On focus, if has value and no dropdown, perhaps re-trigger (optional)
+      input.addEventListener('focus', () => {
+        const q = input.value.trim();
+        if (q && (!dropdown() || dropdown().classList.contains('hidden'))) {
+          runSearch(q);
+        }
+      });
+    }
+
+    const DETAIL_SKELETON = `
+      <div class="mb-4 flex items-center justify-between">
+        <button onclick="resetToHome()" 
+                class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back to index</span>
+        </button>
+        <div id="detail-meta-badges" class="flex gap-2"></div>
+      </div>
+
+      <div id="detail-header" class="mb-3">
+        <!-- JS fills title + description -->
+      </div>
+
+      <div id="detail-aliases-tags" class="flex flex-wrap gap-2 mb-6">
+        <!-- pills -->
+      </div>
+
+      <div class="mb-2 text-sm font-medium text-zinc-400 px-1">Implementations</div>
+      <div id="detail-implementations" class="space-y-4">
+        <!-- language cards with code blocks populated here -->
+      </div>
+
+      <div id="detail-sources" class="mt-8 text-xs text-zinc-500"></div>
+    `;
+
+    // Load and render full concept detail
+    async function loadConceptDetail(slug) {
+      const home = document.getElementById('home-view');
+      const detail = document.getElementById('detail-view');
+      home.classList.add('hidden');
+      detail.classList.remove('hidden');
+      detail.classList.add('detail-enter');
+
+      // Always restore a clean DOM structure first. This prevents "header is null"
+      // (and similar) errors on retry after a previous load failure overwrote
+      // the inner content of #detail-view.
+      detail.innerHTML = DETAIL_SKELETON;
+
+      currentSlug = slug;
+
+      try {
+        const data = await apiGet(`/api/concept/${encodeURIComponent(slug)}`);
+
+        // Header
+        const header = document.getElementById('detail-header');
+        header.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3">
+                <h2 class="text-3xl font-semibold tracking-tighter">${escapeHtml(data.title)}</h2>
+                ${data.concept_type ? `<span class="mt-1 inline-block text-xs px-3 py-1 rounded-2xl border border-zinc-700 bg-zinc-900 text-emerald-400">${escapeHtml(data.concept_type)}</span>` : ''}
+              </div>
+              <p class="mt-2 text-lg text-zinc-300 max-w-3xl">${escapeHtml(data.description || '')}</p>
+            </div>
+          </div>
+        `;
+
+        // Badges top right
+        const meta = document.getElementById('detail-meta-badges');
+        meta.innerHTML = `
+          <span class="text-xs px-2.5 py-1 rounded-2xl bg-zinc-900 border border-zinc-800">${data.aliases ? data.aliases.length : 0} aliases</span>
+        `;
+
+        // Aliases + tags
+        const at = document.getElementById('detail-aliases-tags');
+        at.innerHTML = '';
+        if (data.aliases && data.aliases.length) {
+          const wrap = document.createElement('div');
+          wrap.className = 'flex flex-wrap gap-1.5 items-center';
+          wrap.innerHTML = `<span class="text-xs text-zinc-500 mr-1">also known as:</span>`;
+          data.aliases.forEach(a => {
+            const pill = document.createElement('span');
+            pill.className = `text-xs px-2.5 py-0.5 rounded-2xl ${a.is_primary ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-800' : 'bg-zinc-900 border border-zinc-800 text-zinc-400'}`;
+            pill.textContent = a.alias;
+            wrap.appendChild(pill);
+          });
+          at.appendChild(wrap);
+        }
+        if (data.tags && data.tags.length) {
+          const twrap = document.createElement('div');
+          twrap.className = 'flex flex-wrap gap-1.5 items-center';
+          data.tags.forEach(t => {
+            const p = document.createElement('span');
+            p.className = 'text-[10px] px-2 py-px rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-500';
+            p.textContent = t.name;
+            twrap.appendChild(p);
+          });
+          at.appendChild(twrap);
+        }
+
+        // Implementations
+        const implRoot = document.getElementById('detail-implementations');
+        implRoot.innerHTML = '';
+
+        if (!data.implementations || !data.implementations.length) {
+          implRoot.innerHTML = `<div class="text-sm text-amber-400 px-1">No snippets recorded for this concept yet.</div>`;
+        } else {
+          // If a lang filter active, bubble that language's card to the top
+          let impls = [...data.implementations];
+          if (currentLangFilter) {
+            impls.sort((a, b) => {
+              if (a.code === currentLangFilter) return -1;
+              if (b.code === currentLangFilter) return 1;
+              return 0;
+            });
+          }
+
+          impls.forEach(impl => {
+            const card = document.createElement('div');
+            card.className = 'rounded-3xl border border-zinc-800 bg-zinc-900 overflow-hidden';
+
+            const headerHTML = `
+              <div class="px-4 pt-3 pb-2 flex items-center justify-between bg-zinc-950/70 border-b border-zinc-800">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold">${escapeHtml(impl.display_name)}</span>
+                  <span class="text-xs text-zinc-500">${escapeHtml(impl.runtime_kind || '')}</span>
+                </div>
+                <button class="copy-btn text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 active:bg-zinc-950 transition-colors flex items-center gap-1"
+                        data-content="${encodeForAttr(impl.snippets.map(s => s.content).join('\n\n'))}">
+                  <span>Copy</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16v-4m4 4v4m4-8v8m4-4v-4m-16 4h.01M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 4.01V8" />
+                  </svg>
+                </button>
+              </div>`;
+
+            let body = '';
+            impl.snippets.forEach(sn => {
+              const note = sn.notes ? `<div class="px-4 pt-1 pb-3 text-xs text-zinc-500 italic">${escapeHtml(sn.notes)}</div>` : '';
+              // Use hljs language class hint
+              const langClass = impl.code === 'python' ? 'language-python' : 
+                               (impl.code === 'sql' || impl.code === 'psql') ? 'language-sql' : '';
+              body += `
+                <div class="px-4 pt-3">
+                  <pre class="code-block text-sm p-4 rounded-2xl overflow-auto max-h-[380px]"><code class="${langClass}">${escapeHtml(sn.content)}</code></pre>
+                  ${note}
+                </div>`;
+            });
+
+            card.innerHTML = headerHTML + body;
+
+            // attach copy
+            const copyBtn = card.querySelector('.copy-btn');
+            if (copyBtn) {
+              copyBtn.onclick = (ev) => {
+                ev.stopImmediatePropagation();
+                const raw = decodeFromAttr(copyBtn.dataset.content || '');
+                navigator.clipboard.writeText(raw).then(() => {
+                  const orig = copyBtn.innerHTML;
+                  copyBtn.innerHTML = `<span>Copied!</span>`;
+                  setTimeout(() => { copyBtn.innerHTML = orig; }, 1200);
+                }).catch(() => showToast('Copy failed'));
+              };
+            }
+
+            implRoot.appendChild(card);
+          });
+        }
+
+        // Sources
+        const srcEl = document.getElementById('detail-sources');
+        srcEl.innerHTML = '';
+        if (data.sources && data.sources.length) {
+          const sdiv = document.createElement('div');
+          sdiv.className = 'pt-2 border-t border-zinc-800';
+          sdiv.innerHTML = `<div class="mb-1 text-[10px] uppercase tracking-widest text-zinc-600">Sources</div>`;
+          data.sources.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'text-xs text-zinc-500';
+            row.textContent = `${s.source_type || 'source'}: ${s.notes || s.source_uri || ''}`;
+            sdiv.appendChild(row);
+          });
+          srcEl.appendChild(sdiv);
+        }
+
+        // Re-run syntax highlight on the new blocks
+        setTimeout(() => {
+          document.querySelectorAll('#detail-implementations pre code').forEach(block => {
+            if (window.hljs) {
+              try { hljs.highlightElement(block); } catch (_) {}
+            }
+          });
+        }, 30);
+
+      } catch (e) {
+        console.error(e);
+        // Do not nuke the whole #detail-view (it would destroy #detail-header etc. for future loads).
+        // Target a safe inner container instead.
+        const implRoot = document.getElementById('detail-implementations');
+        if (implRoot) {
+          implRoot.innerHTML = `<div class="text-red-400 p-4">Failed to load concept: ${escapeHtml(e.message)}</div>`;
+        } else {
+          // Last resort
+          detail.innerHTML = `<div class="text-red-400 p-4">Failed to load concept: ${escapeHtml(e.message)}</div>`;
+        }
+      }
+    }
+
+    // Build the hamburger browse tree (collapsible languages)
+    async function loadBrowseTree() {
+      const container = document.getElementById('browse-tree');
+      container.innerHTML = `<div class="px-3 py-2 text-xs text-zinc-500">Loading…</div>`;
+
+      try {
+        const langs = await apiGet('/api/browse');
+        container.innerHTML = '';
+
+        langs.forEach(lang => {
+          const wrap = document.createElement('details');
+          wrap.className = 'group rounded-2xl border border-zinc-800 bg-zinc-950 open:bg-zinc-900';
+
+          const summary = document.createElement('summary');
+          summary.className = 'flex cursor-pointer select-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium list-none hover:bg-zinc-900 rounded-2xl';
+          summary.innerHTML = `
+            <span class="flex items-center gap-2">
+              <span>${escapeHtml(lang.display_name)}</span>
+              <span class="text-[10px] text-zinc-600">(${lang.concepts ? lang.concepts.length : 0})</span>
+            </span>
+            <span class="text-zinc-600 group-open:rotate-180 transition-transform">⌄</span>
+          `;
+
+          const list = document.createElement('div');
+          list.className = 'px-2 pb-2';
+
+          if (!lang.concepts || !lang.concepts.length) {
+            const empty = document.createElement('div');
+            empty.className = 'px-3 py-1 text-xs text-zinc-600 italic';
+            empty.textContent = 'No statements yet';
+            list.appendChild(empty);
+          } else {
+            lang.concepts.forEach(con => {
+              const item = document.createElement('button');
+              item.className = 'w-full text-left px-3 py-1.5 text-sm rounded-2xl hover:bg-zinc-800 flex items-center gap-2 text-zinc-300 hover:text-white';
+              item.innerHTML = `
+                <span class="truncate">${escapeHtml(con.title)}</span>
+                ${con.concept_type ? `<span class="ml-auto text-[10px] text-zinc-600">${escapeHtml(con.concept_type)}</span>` : ''}
+              `;
+              item.onclick = (e) => {
+                e.preventDefault();
+                // Load it
+                loadConceptDetail(con.slug);
+                // Close the menu
+                document.getElementById('hamburger-menu').classList.add('hidden');
+                // Put something sensible in the search box
+                const input = document.getElementById('search-input');
+                input.value = con.title;
+              };
+              list.appendChild(item);
+            });
+          }
+
+          wrap.appendChild(summary);
+          wrap.appendChild(list);
+          container.appendChild(wrap);
+        });
+      } catch (e) {
+        container.innerHTML = `<div class="px-3 py-2 text-xs text-red-400">Could not load browse tree.</div>`;
+      }
+    }
+
+    function toggleHamburgerMenu() {
+      const menu = document.getElementById('hamburger-menu');
+      const isHidden = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !isHidden);
+
+      if (isHidden) {
+        // lazy load or refresh
+        if (!menu.dataset.loaded) {
+          loadBrowseTree();
+          menu.dataset.loaded = 'true';
+        }
+      }
+    }
+
+    // Close hamburger when clicking outside
+    function setupHamburgerClose() {
+      document.addEventListener('click', (e) => {
+        const menu = document.getElementById('hamburger-menu');
+        const btn = document.getElementById('hamburger-btn');
+        if (!menu || !btn) return;
+        if (menu.classList.contains('hidden')) return;
+        if (!menu.contains(e.target) && !btn.contains(e.target)) {
+          menu.classList.add('hidden');
+        }
+      });
+    }
+
+    // Reset everything to the front/home page (logo behavior)
+    function resetToHome() {
+      const home = document.getElementById('home-view');
+      const detail = document.getElementById('detail-view');
+      const input = document.getElementById('search-input');
+      const dd = document.getElementById('search-suggestions');
+
+      input.value = '';
+      currentQuery = '';
+      currentSlug = null;
+      suggestions = [];
+      selectedSuggestionIndex = -1;
+
+      if (dd) dd.classList.add('hidden');
+
+      detail.classList.add('hidden');
+      detail.classList.remove('detail-enter');
+      home.classList.remove('hidden');
+
+      // optional: reload grid in case data changed
+      // loadHomeGrid(); // uncomment if you want fresh on every home return
+    }
+
+    // Small helpers
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function encodeForAttr(str) {
+      return btoa(unescape(encodeURIComponent(str || '')));
+    }
+    function decodeFromAttr(b64) {
+      try { return decodeURIComponent(escape(atob(b64))); } catch { return ''; }
+    }
+
+    // Main bootstrap
+    async function init() {
+      initTailwind();
+
+      console.log('[CodeDex] Page loaded. Resolved API base =', JSON.stringify(API || '(relative)'), 'location =', location.href);
+
+      // Show the API target indicator as early as possible
+      updateApiIndicator();
+
+      // 1. Languages (for filter)
+      await fetchAndPopulateLanguages();
+
+      // 2. Home grid
+      await loadHomeGrid();
+
+      // 3. Keyboard + search behavior
+      setupSearchKeyboard();
+
+      // 4. Hamburger outside clicks
+      setupHamburgerClose();
+
+      // 5. Preload browse tree in background (non blocking)
+      // loadBrowseTree(); // on demand is fine
+
+      // Bonus: if user pastes or arrives with ?q= in url, support it
+      const params = new URLSearchParams(location.search);
+      const initialQ = params.get('q');
+      if (initialQ) {
+        const input = document.getElementById('search-input');
+        input.value = initialQ;
+        setTimeout(() => runSearch(initialQ), 120);
+      }
+
+      // Make sure hljs is ready (already loaded via script)
+      console.log('%c[CodeDex] Frontend ready. Backend should be at same origin.', 'color:#3f3f46');
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', init);
+
+    // Expose a couple helpers for console debugging
+    window.CodeDex = { resetToHome, loadConceptDetail: (s) => loadConceptDetail(s) };
+  </script>
+</body>
+</html>

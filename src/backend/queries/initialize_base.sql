@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS languages (
     code            TEXT NOT NULL UNIQUE, -- e.g. 'sql', 'psql', 'python'
     display_name    TEXT,
     runtime_kind    TEXT,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    description     TEXT
 );
 
 CREATE TABLE IF NOT EXISTS snippets (
