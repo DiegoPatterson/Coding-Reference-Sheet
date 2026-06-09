@@ -29,17 +29,21 @@ The architecture is split into three core pillars:
 
 ### Prerequisites
 * Python 3.12+ recommended
-* PostgreSQL running with the `CodeReferenceDB` database (see `src/backend/queries/initialize_base.sql`)
+* PostgreSQL server with the `CodeReferenceDB` database created and seeded (see `src/backend/queries/initialize_base.sql` and the full steps in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))
 * (For the web UI) the Python packages installed in the project venv
 
 ### Quick Start – CodeDex Web UI (recommended)
+The easiest way:
+
 ```bash
 cd "/home/diego/Documents/Programs/Coding Practice/CodeReference"
-source .venv/bin/activate
-pip install flask 'psycopg[binary]'
-python src/backend/server.py
-# open http://localhost:5000
+./start_server.sh
+# open http://127.0.0.1:5000
 ```
+
+(If you just changed something in the DB or want to force a re-check, run `./start_server.sh --check-only` first.)
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the **complete** instructions, including the manual steps, why `unset CODEREF_DB_DSN` is often required when your DB is already set up, and how to point at a remote/different-credentialed `CodeReferenceDB` server.
 
 This runs **one server** that serves both the search-engine frontend and the API that talks to your DB.
 
@@ -81,6 +85,8 @@ The original terminal journal is in `Old/V01/`.
 ## CodeDex Web Frontend (Search Engine)
 
 New in this workspace: a fully functional search-engine UI in `src/frontend/index.html` served by a lightweight Flask API (`src/backend/server.py`) that queries your live `CodeReferenceDB`.
+
+Full deployment + DB server setup instructions (including how to target a remote `CodeReferenceDB` instance) live in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 - **Language dropdown**: far right inside the search bar — filters suggestion results.
 - **Hamburger (☰)**: right side — collapsible language accordions with statements inside.

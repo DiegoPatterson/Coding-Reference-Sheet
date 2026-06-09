@@ -1,20 +1,20 @@
--- SQL CREATE TABLE 
+-- SQL INSERT INTO
 
 BEGIN;
 
 WITH concept_row AS (
     INSERT INTO concepts(
-        slug,
-        title,
-        concept_type,
-        description,
+        slug, 
+        title, 
+        concept_type, 
+        description, 
         is_active
     )
     VALUES (
-        'create_table',
-        'SQL CREATE TABLE',
-        'ddl',
-        'SQL statement used to define a new table and its columns, data types, constraints, and relationships.',
+        'insert_into',      -- slug
+        'INSERT INTO',      -- title
+        'dml',              -- concept_type
+        'SQL statement used to add one or more new rows of data into a table, specifying the target columns and the values (or a subquery).',
         TRUE
     )
     ON CONFLICT (slug) DO UPDATE
@@ -29,9 +29,8 @@ WITH concept_row AS (
 concept_lookup AS (
     SELECT id FROM concept_row
     UNION ALL
-    SELECT id FROM concepts WHERE slug = 'create_table' AND NOT EXISTS (SELECT 1 FROM concept_row)
+    SELECT id FROM concepts WHERE slug = 'insert_into' AND NOT EXISTS (SELECT 1 FROM concept_row)
 ),
-
 sql_language AS (
     SELECT id FROM languages WHERE code = 'sql'
 ),
@@ -46,12 +45,14 @@ alias_insert AS (
         c.id,
         alias_value,
         'keyword',
-        alias_value = 'create table'
+        alias_value = 'insert into'
     FROM concept_lookup c
     CROSS JOIN (VALUES
-        ('create table'),
-        ('create_table'),
-        ('ct')
+        ('insert into'),
+        ('insert_into'),
+        ('insert'),
+        ('sql insert'),
+        ('insert statement')
     ) AS aliases(alias_value)
     ON CONFLICT (concept_id, alias) DO NOTHING
     RETURNING id
@@ -64,13 +65,12 @@ tag_link_insert AS (
     FROM concept_lookup c
     CROSS JOIN tags t
     WHERE t.name IN (
-        'database',
+        'dml',
         'sql',
-        'ddl',
-        'schema',
+        'database',
+        'insert',
         'table',
-        'constraints',
-        'relationships'
+        'data'
     )
     ON CONFLICT (concept_id, tag_id) DO NOTHING
     RETURNING concept_id, tag_id
@@ -81,21 +81,17 @@ snippet_insert AS (
         language_id,
         snippet_kind,
         content,
-        notes,
+        notes, 
         sort_order,
         is_primary
     )
     SELECT
         c.id,
         l.id,
-        'create_table',
-        $$CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);$$,
-        'Basic CREATE TABLE example for defining a new table.',
+        'insert_into',
+        $$INSERT INTO users (email, active) 
+        VALUES ('ada@example.com', TRUE);$$,
+        'Basic INSERT INTO example adding a single new active user row.',
         1,
         TRUE
     FROM concept_lookup c
@@ -113,8 +109,8 @@ source_insert AS (
     SELECT
         c.id,
         'manual',
-        'local://src/backend/queries/postgres/statements/create_table.sql',
-        'Manual seed for the create_table concept. File: src/backend/queries/postgres/statements/create_table.sql; purpose: DDL example for creating tables.'
+        'local://src/backend/queries/postgres/statements/insert_into.sql',
+        'Manual seed for the insert_into concept. File: src/backend/queries/postgres/statements/insert_into.sql; purpose: DML example for INSERT INTO statements.'
     FROM concept_lookup c
     ON CONFLICT DO NOTHING
     RETURNING id
@@ -135,19 +131,15 @@ INSERT INTO import_runs (
     status,
     notes
 )
-
 VALUES (
-    'src/backend/queries/postgres/statements/create_table.sql',
+    'src/backend/queries/postgres/statements/insert_into.sql',
     'sql',
     now(),
     now(),
     'success',
-    'Loaded SQL CREATE TABLE statement concept, aliases, tags, snippet, and source.'
+    'Loaded SQL INSERT INTO statement concept, aliases, tags, snippet, and source.'
 );
 
+-- ROLLBACK;
 COMMIT;
 
--- SELECT * FROM concepts WHERE slug = 'create_table';
--- SELECT * FROM snippets s JOIN concepts c ON s.concept_id = c.id WHERE c.slug = 'create_table';
--- SELECT * FROM concept_aliases WHERE concept_id = (SELECT id FROM concepts WHERE slug='create_table');
--- SELECT source_uri, notes FROM sources WHERE source_uri LIKE '%create_table.sql';

@@ -1,9 +1,9 @@
--- SQL CREATE TABLE 
+-- CROSS JOIN 
 
 BEGIN;
 
 WITH concept_row AS (
-    INSERT INTO concepts(
+    INSERT INTO concepts (
         slug,
         title,
         concept_type,
@@ -11,10 +11,10 @@ WITH concept_row AS (
         is_active
     )
     VALUES (
-        'create_table',
-        'SQL CREATE TABLE',
-        'ddl',
-        'SQL statement used to define a new table and its columns, data types, constraints, and relationships.',
+        'cross_join',
+        'SQL CROSS JOIN',
+        'dml',
+        'SQL statement used to combine every row from table A to every row from table B',
         TRUE
     )
     ON CONFLICT (slug) DO UPDATE
@@ -24,14 +24,13 @@ WITH concept_row AS (
         description = EXCLUDED.description,
         is_active = EXCLUDED.is_active,
         updated_at = now()
-    RETURNING id
+    RETURNING ID
 ),
 concept_lookup AS (
     SELECT id FROM concept_row
     UNION ALL
-    SELECT id FROM concepts WHERE slug = 'create_table' AND NOT EXISTS (SELECT 1 FROM concept_row)
+    SELECT id FROM concepts WHERE slug = 'cross_join' AND NOT EXISTS (SELECT 1 FROM concept_row)
 ),
-
 sql_language AS (
     SELECT id FROM languages WHERE code = 'sql'
 ),
@@ -46,12 +45,15 @@ alias_insert AS (
         c.id,
         alias_value,
         'keyword',
-        alias_value = 'create table'
+        alias_value = 'cross join'
     FROM concept_lookup c
     CROSS JOIN (VALUES
-        ('create table'),
-        ('create_table'),
-        ('ct')
+        ('cross join'),
+        ('cross_join'),
+        ('sql cross join'),
+        ('x join'),
+        ('+ join'),
+        ('cj')
     ) AS aliases(alias_value)
     ON CONFLICT (concept_id, alias) DO NOTHING
     RETURNING id
@@ -64,19 +66,19 @@ tag_link_insert AS (
     FROM concept_lookup c
     CROSS JOIN tags t
     WHERE t.name IN (
-        'database',
+        'dml',
         'sql',
-        'ddl',
-        'schema',
-        'table',
-        'constraints',
-        'relationships'
+        'database',
+        'join',
+        'cross join',
+        'cartesian product',
+        'query'
     )
     ON CONFLICT (concept_id, tag_id) DO NOTHING
     RETURNING concept_id, tag_id
 ),
 snippet_insert AS (
-    INSERT INTO snippets(
+    INSERT INTO snippets (
         concept_id,
         language_id,
         snippet_kind,
@@ -88,14 +90,13 @@ snippet_insert AS (
     SELECT
         c.id,
         l.id,
-        'create_table',
-        $$CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);$$,
-        'Basic CREATE TABLE example for defining a new table.',
+        'cross_join',
+        $$SELECT
+    p.product_name,
+    c.category_name
+FROM products p
+CROSS JOIN categories c;$$,
+        'Produces a Cartesian product: every row from the left table is paired with every row from the right table with no matching condition. If the first table has N rows and the second has M rows, the result will contain exactly N x M rows. Useful for generating all possible combinations (product variants by size+color, test data matrices, date dimension scaffolding, etc.). In real queries a CROSS JOIN is frequently followed by a WHERE clause to filter the results down. Be careful with large tables - the result size grows very quickly.',
         1,
         TRUE
     FROM concept_lookup c
@@ -113,8 +114,8 @@ source_insert AS (
     SELECT
         c.id,
         'manual',
-        'local://src/backend/queries/postgres/statements/create_table.sql',
-        'Manual seed for the create_table concept. File: src/backend/queries/postgres/statements/create_table.sql; purpose: DDL example for creating tables.'
+        'local://src/backend/queries/postgres/statements/cross_join.sql',
+        'Manual seed for the cross_join concept. File: src/backend/queries/postgres/statements/cross_join.sql; purpose: DML example for cross join'
     FROM concept_lookup c
     ON CONFLICT DO NOTHING
     RETURNING id
@@ -137,17 +138,13 @@ INSERT INTO import_runs (
 )
 
 VALUES (
-    'src/backend/queries/postgres/statements/create_table.sql',
+    'src/backend/queries/postgres/statements/cross_join.sql',
     'sql',
     now(),
     now(),
     'success',
-    'Loaded SQL CREATE TABLE statement concept, aliases, tags, snippet, and source.'
+    'Loaded SQL CROSS JOIN statement concept, aliases, tags, snippet, and source.'
 );
 
+-- ROLLBACK;
 COMMIT;
-
--- SELECT * FROM concepts WHERE slug = 'create_table';
--- SELECT * FROM snippets s JOIN concepts c ON s.concept_id = c.id WHERE c.slug = 'create_table';
--- SELECT * FROM concept_aliases WHERE concept_id = (SELECT id FROM concepts WHERE slug='create_table');
--- SELECT source_uri, notes FROM sources WHERE source_uri LIKE '%create_table.sql';

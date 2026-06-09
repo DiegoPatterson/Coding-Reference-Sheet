@@ -195,7 +195,7 @@
       <!-- Quick concepts grid -->
       <div class="mt-4">
         <div class="flex items-baseline justify-between mb-3 px-1">
-          <div class="text-sm font-medium text-zinc-400">All concepts in the index</div>
+          <div class="text-sm font-medium text-zinc-400">All concepts in the index <span class="text-[10px] text-zinc-600 font-normal">(grouped &amp; collapsed by default — click headers to expand)</span></div>
           <div class="flex items-center gap-2">
             <div id="concept-count" class="text-xs text-zinc-600"></div>
             <div id="api-debug" class="text-[10px] text-zinc-500 font-mono"></div>
@@ -213,8 +213,8 @@
           <!-- View mode + expand/collapse (proactive for large catalogs) -->
           <div class="flex gap-1 ml-auto sm:ml-0 items-center">
             <div class="flex border border-zinc-700 rounded-2xl overflow-hidden text-xs">
-              <button id="view-cards" class="px-2.5 py-1 bg-zinc-800 text-zinc-200">Cards</button>
-              <button id="view-list" class="px-2.5 py-1 text-zinc-500 hover:text-zinc-300">List</button>
+              <button id="view-cards" class="px-2.5 py-1 text-zinc-500 hover:text-zinc-300">Cards</button>
+              <button id="view-list" class="px-2.5 py-1 bg-zinc-800 text-zinc-200">List</button>
             </div>
             <button id="expand-all-groups" 
                     class="text-xs px-2.5 py-1 rounded-2xl border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900">
@@ -486,8 +486,41 @@
     // counts per type for the category tiles (populated on initial load)
     let typesWithCounts = [];
 
+    // sample titles per type (for richer category tiles on front page)
+    let samplesByType = {};
+
     // View mode for the grid: 'cards' (grouped) or 'list' (compact flat list)
-    let gridViewMode = 'cards';
+    let gridViewMode = 'list';  // list is better default for the scalable "all concepts" front page view
+
+    // Helper to change view mode and keep the toggle buttons in sync (and the broad-view hint)
+    function setGridViewMode(mode) {
+      gridViewMode = mode;
+      const viewCards = document.getElementById('view-cards');
+      const viewList = document.getElementById('view-list');
+      if (!viewCards || !viewList) return;
+
+      const isBroad = activeTypeFilters.size === 0 && !gridFilterText;
+
+      if (mode === 'cards') {
+        viewCards.classList.add('bg-zinc-800', 'text-zinc-200');
+        viewCards.classList.remove('text-zinc-500', 'opacity-50');
+        viewCards.title = isBroad ? 'Card layout works best after selecting a category (avoids messy side-by-side grids for the full index)' : '';
+        viewList.classList.remove('bg-zinc-800', 'text-zinc-200');
+        viewList.classList.add('text-zinc-500');
+      } else {
+        viewList.classList.add('bg-zinc-800', 'text-zinc-200');
+        viewList.classList.remove('text-zinc-500');
+        viewCards.classList.remove('bg-zinc-800', 'text-zinc-200');
+        viewCards.classList.add('text-zinc-500');
+        if (isBroad) {
+          viewCards.classList.add('opacity-50');
+          viewCards.title = 'Card layout works best after selecting a category (avoids messy side-by-side grids for the full index)';
+        } else {
+          viewCards.classList.remove('opacity-50');
+          viewCards.title = '';
+        }
+      }
+    }
 
     function renderHomeGrid(items, totalFromServer) {
       const grid = document.getElementById('home-grid');
@@ -519,6 +552,9 @@
         return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
       });
 
+      // "all filter" / broad view? Use compact linear lists (no side-by-side grids) to stay scannable as the index grows.
+      const isBroadAllView = (activeTypeFilters.size === 0 && !gridFilterText);
+
       let shownInThisRender = 0;
       sortedTypes.forEach(type => {
         const typeConcepts = groups[type];
@@ -527,36 +563,46 @@
         const groupWrapper = document.createElement('div');
         groupWrapper.className = 'col-span-full';
 
+        // Auto-expand groups when the user has actively filtered to this category (e.g. clicked a category tile or type pill).
+        // This prevents the "blank" experience — content is visible immediately after drilling in.
+        // For broad "all" or no specific type filter, keep collapsed for cleanliness/scannability.
+        const startExpanded = activeTypeFilters.has(type);
+
         const header = document.createElement('div');
-        header.className = 'mt-4 first:mt-0 mb-1 px-1 flex items-center gap-2 cursor-pointer select-none hover:text-zinc-300 group-collapsed';
+        const headerBase = 'mt-4 first:mt-0 mb-1 px-1 flex items-center gap-2 cursor-pointer select-none hover:text-zinc-300';
+        header.className = headerBase + (startExpanded ? '' : ' group-collapsed');
+
+        const minusCls = startExpanded ? '' : 'group-collapsed:hidden';
+        const plusCls = startExpanded ? 'hidden' : 'hidden group-collapsed:inline';
         header.innerHTML = `
           <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500">${escapeHtml(type)}</span>
           <span class="text-[10px] text-zinc-600">(${typeConcepts.length})</span>
-          <span class="ml-auto text-[10px] text-zinc-600 group-collapsed:hidden">−</span>
-          <span class="ml-auto text-[10px] text-zinc-600 hidden group-collapsed:inline">+</span>
+          <span class="ml-auto text-[10px] text-zinc-600 ${minusCls}">−</span>
+          <span class="ml-auto text-[10px] text-zinc-600 ${plusCls}">+</span>
         `;
         groupWrapper.appendChild(header);
 
         const cardsContainer = document.createElement('div');
-        if (gridViewMode === 'list') {
-          cardsContainer.className = 'flex flex-col gap-1 hidden';  // dense list, start collapsed
-        } else {
-          cardsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 hidden';  // start collapsed by default for cleanliness
-        }
+        const useCompact = isBroadAllView || gridViewMode === 'list';
+        const containerBase = useCompact 
+          ? 'flex flex-col gap-0.5' 
+          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3';
+        cardsContainer.className = containerBase + (startExpanded ? '' : ' hidden');
 
         typeConcepts.forEach(c => {
-          if (gridViewMode === 'list') {
-            // Compact list row
+          if (useCompact) {
+            // Compact list row — optimized for scanning many items in "all" or list mode.
+            // In broad "all" we can keep the type pill (lets you drill into just that type from here).
             const row = document.createElement('div');
-            row.className = 'flex items-center justify-between gap-3 px-3 py-2 border border-zinc-800 bg-zinc-900 hover:bg-zinc-950 rounded-2xl text-sm cursor-pointer';
+            row.className = 'flex items-center justify-between gap-3 px-3 py-1.5 border border-zinc-800 bg-zinc-900 hover:bg-zinc-950 rounded-2xl text-sm cursor-pointer';
+            const desc = (c.description || '').slice(0, 70) + ((c.description || '').length > 70 ? '…' : '');
             row.innerHTML = `
-              <div class="flex items-center gap-2 min-w-0">
+              <div class="flex items-center gap-2 min-w-0 flex-1">
                 <span class="font-medium truncate">${escapeHtml(c.title)}</span>
                 ${c.concept_type ? `<span class="lang-pill text-[10px] shrink-0 cursor-pointer" data-type="${escapeHtml(c.concept_type)}">${escapeHtml(c.concept_type)}</span>` : ''}
               </div>
               <div class="flex items-center gap-2 text-xs text-zinc-500 min-w-0">
-                <span class="truncate max-w-[320px]">${escapeHtml((c.description || '').slice(0, 80))}${(c.description || '').length > 80 ? '…' : ''}</span>
-                <span class="shrink-0">·</span>
+                ${desc ? `<span class="truncate max-w-[280px] hidden sm:inline">${escapeHtml(desc)}</span>` : ''}
                 <span class="shrink-0">${c.available_langs ? c.available_langs.length : 0} lang(s)</span>
               </div>
             `;
@@ -576,6 +622,7 @@
                   activeTypeFilters.delete(t);
                 } else {
                   activeTypeFilters.add(t);
+                  setGridViewMode('cards');  // drilling from a pill in the list -> nice cards + auto-expanded
                 }
                 applyGridFilters();
               };
@@ -583,7 +630,7 @@
 
             cardsContainer.appendChild(row);
           } else {
-            // Card view (original)
+            // Card view — only used for filtered/narrowed views so the side-by-side grid doesn't get overwhelming
             const card = document.createElement('div');
             card.className = 'concept-card group cursor-pointer border border-zinc-800 bg-zinc-900 hover:bg-zinc-950 rounded-3xl p-4 flex flex-col';
             card.innerHTML = `
@@ -617,6 +664,7 @@
                   activeTypeFilters.delete(t);
                 } else {
                   activeTypeFilters.add(t);
+                  setGridViewMode('cards');
                 }
                 applyGridFilters();
               };
@@ -753,15 +801,19 @@
         const typeDiscovery = await apiGet('/api/concepts?limit=100'); // enough to compute counts while catalog is small
         const items = typeDiscovery.items || typeDiscovery;
         const counts = {};
+        samplesByType = {};
         items.forEach(c => {
           const t = c.concept_type || 'other';
           counts[t] = (counts[t] || 0) + 1;
+          if (!samplesByType[t]) samplesByType[t] = [];
+          if (samplesByType[t].length < 2) samplesByType[t].push(c.title);
         });
         typesWithCounts = Object.keys(counts).sort().map(t => ({ type: t, count: counts[t] }));
         knownTypes = typesWithCounts.map(x => x.type);
         buildTypeFilterPillsFromList(knownTypes);
       } catch (e) {
         console.warn('Could not discover types for pills/tiles', e);
+        samplesByType = {};
       }
 
       // Show category tiles if no filters yet (keeps the front page clean)
@@ -787,38 +839,19 @@
         const viewList = document.getElementById('view-list');
         if (viewCards) {
           viewCards.onclick = () => {
-            gridViewMode = 'cards';
-            viewCards.classList.add('bg-zinc-800', 'text-zinc-200');
-            viewCards.classList.remove('text-zinc-500');
-            if (viewList) {
-              viewList.classList.remove('bg-zinc-800', 'text-zinc-200');
-              viewList.classList.add('text-zinc-500');
-            }
+            setGridViewMode('cards');
             renderHomeGrid(gridConcepts, /* total */ gridConcepts.length); // re-render current set
           };
         }
         if (viewList) {
           viewList.onclick = () => {
-            gridViewMode = 'list';
-            viewList.classList.add('bg-zinc-800', 'text-zinc-200');
-            viewList.classList.remove('text-zinc-500');
-            if (viewCards) {
-              viewCards.classList.remove('bg-zinc-800', 'text-zinc-200');
-              viewCards.classList.add('text-zinc-500');
-            }
+            setGridViewMode('list');
             renderHomeGrid(gridConcepts, /* total */ gridConcepts.length);
           };
         }
 
-        // initial button state
-        if (viewCards && gridViewMode === 'cards') {
-          viewCards.classList.add('bg-zinc-800', 'text-zinc-200');
-          viewCards.classList.remove('text-zinc-500');
-        }
-        if (viewList && gridViewMode === 'list') {
-          viewList.classList.add('bg-zinc-800', 'text-zinc-200');
-          viewList.classList.remove('text-zinc-500');
-        }
+        // initial button state (via helper so the broad-view hint is applied correctly)
+        setGridViewMode(gridViewMode);
 
         // wire expand/collapse all (for when the catalog gets large)
         const expandAll = document.getElementById('expand-all-groups');
@@ -874,6 +907,7 @@
       clear.textContent = 'All';
       clear.onclick = () => {
         activeTypeFilters.clear();
+        setGridViewMode('list');  // back to compact list for the full "all" index
         applyGridFilters();
         buildTypeFilterPillsFromList(types);
       };
@@ -889,6 +923,7 @@
             activeTypeFilters.delete(type);
           } else {
             activeTypeFilters.add(type);
+            setGridViewMode('cards');  // when narrowing to a category, switch to (and auto-expand) the nicer cards view
           }
           applyGridFilters();
           buildTypeFilterPillsFromList(types);
@@ -931,9 +966,11 @@
         const tile = document.createElement('div');
         tile.className = 'px-3 py-2 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-sm w-full sm:w-auto';
 
-        // Find 1-2 example titles for this type from the last unfiltered discovery if possible
-        // (we don't store full items globally for simplicity; we show count + click to explore)
-        const examples = ''; // we can enhance later to pull real examples
+        // Use the samples we captured during discovery for a richer front-page tile
+        const ex = samplesByType[type] || [];
+        const exLine = ex.length 
+          ? `<div class="text-[10px] text-zinc-500 mt-1 truncate">e.g. ${ex.map(escapeHtml).join(' · ')}</div>` 
+          : '';
 
         tile.innerHTML = `
           <button class="w-full text-left">
@@ -942,12 +979,16 @@
               <span class="text-xs text-zinc-500 shrink-0">(${count})</span>
             </div>
             <div class="text-[10px] text-zinc-500 mt-0.5">Click to browse this category</div>
+            ${exLine}
           </button>
         `;
 
-        // Clicking the whole tile acts as the filter
+        // Clicking the whole tile acts as the filter.
+        // Auto-switch to "Cards" view + the render logic will auto-expand the group
+        // so you immediately see the content instead of a blank collapsed section.
         tile.onclick = () => {
           activeTypeFilters.add(type);
+          setGridViewMode('cards');  // now the helper sees the filter is active, so no erroneous "broad" hint
           applyGridFilters();
         };
 

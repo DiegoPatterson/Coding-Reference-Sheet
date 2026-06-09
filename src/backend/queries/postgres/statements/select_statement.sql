@@ -1,4 +1,4 @@
--- SQL CREATE TABLE 
+-- SQL SELECT Statement - allows user to print parts of the database to console
 
 BEGIN;
 
@@ -11,10 +11,10 @@ WITH concept_row AS (
         is_active
     )
     VALUES (
-        'create_table',
-        'SQL CREATE TABLE',
-        'ddl',
-        'SQL statement used to define a new table and its columns, data types, constraints, and relationships.',
+        'select',
+        'SQL SELECT',
+        'dql',
+        'SQL statement used to retrieve data from one or more tables or views, optionally filtering, joining, grouping, aggregating, and ordering results.',
         TRUE
     )
     ON CONFLICT (slug) DO UPDATE
@@ -29,9 +29,8 @@ WITH concept_row AS (
 concept_lookup AS (
     SELECT id FROM concept_row
     UNION ALL
-    SELECT id FROM concepts WHERE slug = 'create_table' AND NOT EXISTS (SELECT 1 FROM concept_row)
+    SELECT id FROM concepts WHERE slug = 'select' AND NOT EXISTS (SELECT 1 FROM concept_row)
 ),
-
 sql_language AS (
     SELECT id FROM languages WHERE code = 'sql'
 ),
@@ -49,9 +48,13 @@ alias_insert AS (
         alias_value = 'create table'
     FROM concept_lookup c
     CROSS JOIN (VALUES
-        ('create table'),
-        ('create_table'),
-        ('ct')
+        ('select'),
+        ('sql_select'),
+        ('sql select'),
+        ('select statement'),
+        ('query'),
+        ('sql query'),
+        ('sql_query')
     ) AS aliases(alias_value)
     ON CONFLICT (concept_id, alias) DO NOTHING
     RETURNING id
@@ -64,13 +67,12 @@ tag_link_insert AS (
     FROM concept_lookup c
     CROSS JOIN tags t
     WHERE t.name IN (
-        'database',
+        'query',
         'sql',
-        'ddl',
-        'schema',
-        'table',
-        'constraints',
-        'relationships'
+        'database',
+        'dml',
+        'postgresql',
+        'select'
     )
     ON CONFLICT (concept_id, tag_id) DO NOTHING
     RETURNING concept_id, tag_id
@@ -88,14 +90,13 @@ snippet_insert AS (
     SELECT
         c.id,
         l.id,
-        'create_table',
-        $$CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);$$,
-        'Basic CREATE TABLE example for defining a new table.',
+        'select',
+        $$SELECT id, email, created_at 
+        FROM users 
+        WHERE active = TRUE
+        ORDER BY created_at description
+        LIMIT 10;$$,
+        'Basic SELECT example retrieving the 10 most recently created active users.',
         1,
         TRUE
     FROM concept_lookup c
@@ -113,8 +114,8 @@ source_insert AS (
     SELECT
         c.id,
         'manual',
-        'local://src/backend/queries/postgres/statements/create_table.sql',
-        'Manual seed for the create_table concept. File: src/backend/queries/postgres/statements/create_table.sql; purpose: DDL example for creating tables.'
+        'local://src/backend/queries/postgres/statements/select_statement.sql',
+        'Manual seed for the select concept. File: src/backend/queries/postgres/statements/select_statement.sql; purpose: query example using SELECT.'
     FROM concept_lookup c
     ON CONFLICT DO NOTHING
     RETURNING id
@@ -137,17 +138,12 @@ INSERT INTO import_runs (
 )
 
 VALUES (
-    'src/backend/queries/postgres/statements/create_table.sql',
+    'src/backend/queries/postgres/statements/select_statement.sql',
     'sql',
     now(),
     now(),
     'success',
-    'Loaded SQL CREATE TABLE statement concept, aliases, tags, snippet, and source.'
+    'Loaded SQL SELECT statement concept, aliases, tags, snippet, and source.'
 );
-
+-- ROLLBACK;
 COMMIT;
-
--- SELECT * FROM concepts WHERE slug = 'create_table';
--- SELECT * FROM snippets s JOIN concepts c ON s.concept_id = c.id WHERE c.slug = 'create_table';
--- SELECT * FROM concept_aliases WHERE concept_id = (SELECT id FROM concepts WHERE slug='create_table');
--- SELECT source_uri, notes FROM sources WHERE source_uri LIKE '%create_table.sql';

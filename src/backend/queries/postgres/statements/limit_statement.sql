@@ -1,20 +1,20 @@
--- SQL CREATE TABLE 
+-- SQL LIMIT Statement
 
 BEGIN;
 
 WITH concept_row AS (
-    INSERT INTO concepts(
-        slug,
+    INSERT INTO concepts (
+        slug, 
         title,
         concept_type,
         description,
         is_active
     )
     VALUES (
-        'create_table',
-        'SQL CREATE TABLE',
-        'ddl',
-        'SQL statement used to define a new table and its columns, data types, constraints, and relationships.',
+        'limit',
+        'SQL LIMIT',
+        'dql',
+        'SQL statement used to limit the maximum numbers of records to return',
         TRUE
     )
     ON CONFLICT (slug) DO UPDATE
@@ -24,14 +24,13 @@ WITH concept_row AS (
         description = EXCLUDED.description,
         is_active = EXCLUDED.is_active,
         updated_at = now()
-    RETURNING id
+    RETURNING ID
 ),
 concept_lookup AS (
     SELECT id FROM concept_row
     UNION ALL
-    SELECT id FROM concepts WHERE slug = 'create_table' AND NOT EXISTS (SELECT 1 FROM concept_row)
+    SELECT id FROM concepts WHERE slug = 'limit' AND NOT EXISTS (SELECT 1 FROM concept_row)
 ),
-
 sql_language AS (
     SELECT id FROM languages WHERE code = 'sql'
 ),
@@ -46,37 +45,33 @@ alias_insert AS (
         c.id,
         alias_value,
         'keyword',
-        alias_value = 'create table'
+        alias_value = 'limit'
     FROM concept_lookup c
     CROSS JOIN (VALUES
-        ('create table'),
-        ('create_table'),
-        ('ct')
+        ('limit'),
+        ('sql limit')
     ) AS aliases(alias_value)
     ON CONFLICT (concept_id, alias) DO NOTHING
     RETURNING id
 ),
 tag_link_insert AS (
-    INSERT INTO concept_tags (concept_id, tag_id)
+    INSERT INTO  concept_tags (concept_id, tag_id)
     SELECT
         c.id,
         t.id
     FROM concept_lookup c
     CROSS JOIN tags t
     WHERE t.name IN (
-        'database',
+        'dql',
         'sql',
-        'ddl',
-        'schema',
-        'table',
-        'constraints',
-        'relationships'
+        'database',
+        'query'
     )
     ON CONFLICT (concept_id, tag_id) DO NOTHING
     RETURNING concept_id, tag_id
 ),
 snippet_insert AS (
-    INSERT INTO snippets(
+    INSERT INTO snippets (
         concept_id,
         language_id,
         snippet_kind,
@@ -88,14 +83,16 @@ snippet_insert AS (
     SELECT
         c.id,
         l.id,
-        'create_table',
-        $$CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);$$,
-        'Basic CREATE TABLE example for defining a new table.',
+        'limit',
+        $$SELECT
+    id,
+    email,
+    created_at
+FROM users
+WHERE active = TRUE
+ORDER BY created_at DESC
+LIMIT 10 OFFSET 10;$$,
+        'LIMIT restricts the number of rows returned by a query. It should nearly always be paired with ORDER BY to get predictable "top N" results. OFFSET skips the first N rows before applying the limit (commonly used for pagination: page size x (page number - 1)). Important notes: Large OFFSET values are inefficient because the database must still scan and discard the skipped rows, For deep pagination on large tables, prefer keyset/cursor pagination instead (e.g. WHERE id > last_seen_id), PostgreSQL also supports the SQL standard syntax: OFFSET ... FETCH FIRST n ROWS ONLY. Without an ORDER BY, LIMIT returns an arbitrary subset of matching rows.',
         1,
         TRUE
     FROM concept_lookup c
@@ -113,8 +110,8 @@ source_insert AS (
     SELECT
         c.id,
         'manual',
-        'local://src/backend/queries/postgres/statements/create_table.sql',
-        'Manual seed for the create_table concept. File: src/backend/queries/postgres/statements/create_table.sql; purpose: DDL example for creating tables.'
+        'local://src/backend/queries/postgres/statements/limit_statement.sql',
+        'Manual seed for the limit concept. File: src/backend/queries/postgres/statements/limit_statement.sql; purpose: DQL example for limit'
     FROM concept_lookup c
     ON CONFLICT DO NOTHING
     RETURNING id
@@ -137,17 +134,13 @@ INSERT INTO import_runs (
 )
 
 VALUES (
-    'src/backend/queries/postgres/statements/create_table.sql',
+    'src/backend/queries/postgres/statements/limit_statement.sql',
     'sql',
     now(),
     now(),
     'success',
-    'Loaded SQL CREATE TABLE statement concept, aliases, tags, snippet, and source.'
+    'Loaded SQL LIMIT statement concept, aliases, tags, snippet, and source.'
 );
 
+-- ROLLBACK;
 COMMIT;
-
--- SELECT * FROM concepts WHERE slug = 'create_table';
--- SELECT * FROM snippets s JOIN concepts c ON s.concept_id = c.id WHERE c.slug = 'create_table';
--- SELECT * FROM concept_aliases WHERE concept_id = (SELECT id FROM concepts WHERE slug='create_table');
--- SELECT source_uri, notes FROM sources WHERE source_uri LIKE '%create_table.sql';

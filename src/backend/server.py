@@ -11,7 +11,13 @@ from psycopg.rows import dict_row
 from flask import Flask, jsonify, request, send_from_directory, abort
 
 # --- Config ---
-DB_DSN = "dbname=CodeReferenceDB user=diego host=localhost"
+# Override with env var to point at your CodeReferenceDB server (local, remote, different user/port/creds).
+# Examples:
+#   export CODEREF_DB_DSN="dbname=CodeReferenceDB user=diego host=localhost"
+#   export CODEREF_DB_DSN="dbname=CodeReferenceDB user=myappuser password=secret host=localhost port=5432"
+#   export CODEREF_DB_DSN="postgresql://myappuser:secret@db.internal:5432/CodeReferenceDB"
+raw_dsn = os.environ.get("CODEREF_DB_DSN")
+DB_DSN = raw_dsn if raw_dsn else "dbname=CodeReferenceDB user=diego host=localhost"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
 
@@ -349,6 +355,35 @@ if __name__ == "__main__":
     print(f"  Frontend: {FRONTEND_DIR}")
     print(f"  DB: {DB_DSN}")
     print("  Open http://127.0.0.1:5000 (preferred) or http://localhost:5000")
+    print("")
+
+    # Early connectivity check so you get a clear error instead of 500s later
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT current_user, current_database()")
+                who = cur.fetchone()
+        print(f"  ✓ Database connection successful (connected as {who.get('current_user')} to {who.get('current_database')})")
+    except Exception as e:
+        print("  ✗ FATAL: Cannot connect to the database.")
+        print(f"     DSN used: {DB_DSN}")
+        print(f"     Error: {e}")
+        print("")
+        print("     Quick checks:")
+        print("       1. psql -d CodeReferenceDB -c \"SELECT current_user, current_database();\"")
+        print("       2. In the SAME terminal, run:   env | grep -i coderef")
+        print("       3. Use the correct value, e.g.:")
+        print("            export CODEREF_DB_DSN=\"dbname=CodeReferenceDB user=diego host=localhost\"")
+        print("            # or simply:  unset CODEREF_DB_DSN")
+        print("       4. Then: python src/backend/server.py")
+        print("")
+        print("     See docs/DEPLOYMENT.md for full troubleshooting.")
+        import sys
+        sys.exit(1)
+
+    print("")
+    print("  DB connection: set CODEREF_DB_DSN env var to target your CodeReferenceDB server")
+    print("    (supports full libpq DSN or postgresql:// URI; defaults work for local 'diego' user).")
     print("")
     print("  To use the frontend with *your own server* instead:")
     print("    - Edit the `let API = '...'` line at the top of src/frontend/index.html")

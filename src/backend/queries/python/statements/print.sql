@@ -14,7 +14,7 @@ WITH concept_row AS (
 	)
 	VALUES (
 		'python_print_statement',
-		'Python Print Statement',
+		'python print',
 		'syntax',
 		'Displays text or values to standard output using the built-in print() function.',
 		TRUE
