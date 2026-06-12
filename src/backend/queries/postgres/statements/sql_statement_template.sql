@@ -1,4 +1,4 @@
--- ORDER BY
+-- SQL INSERT INTO
 
 BEGIN;
 
@@ -11,10 +11,10 @@ WITH concept_row AS (
         is_active
     )
     VALUES (
-        'order_by',      -- slug
-        'ORDER BY',      -- title
-        'dql',              -- concept_type
-        'SQL statement used to sort the results in ascending to descending order.',
+        '____',      -- TODO: slug
+        '____',      -- TODO: title
+        '____',      -- TODO: concept_type
+        '____',      -- TODO: description
         TRUE
     )
     ON CONFLICT (slug) DO UPDATE
@@ -29,7 +29,7 @@ WITH concept_row AS (
 concept_lookup AS (
     SELECT id FROM concept_row
     UNION ALL
-    SELECT id FROM concepts WHERE slug = 'order_by' AND NOT EXISTS (SELECT 1 FROM concept_row)
+    SELECT id FROM concepts WHERE slug = '_____' AND NOT EXISTS (SELECT 1 FROM concept_row)     -- TODO: slug
 ),
 sql_language AS (
     SELECT id FROM languages WHERE code = 'sql'
@@ -45,13 +45,13 @@ alias_insert AS (
         c.id,
         alias_value,
         'keyword',
-        alias_value = 'order by'
+        alias_value = '____'    -- TODO: primary alias
     FROM concept_lookup c
-    CROSS JOIN (VALUES
-        ('order by'),
-        ('order_by'),
-        ('sql order by'),
-        ('order by statement')
+    CROSS JOIN (VALUES          -- TODO: other possible
+        ('____'),
+        ('____'),
+        ('sql ____'),
+        ('____ Statement')
     ) AS aliases(alias_value)
     ON CONFLICT (concept_id, alias) DO NOTHING
     RETURNING id
@@ -63,13 +63,8 @@ tag_link_insert AS (
         t.id
     FROM concept_lookup c
     CROSS JOIN tags t
-    WHERE t.name IN (
-        'dql',
-        'sql',
-        'database',
-        'order',
-        'table',
-        'data'
+    WHERE t.name IN (          -- TODO: related tags
+        '___'
     )
     ON CONFLICT (concept_id, tag_id) DO NOTHING
     RETURNING concept_id, tag_id
@@ -87,15 +82,10 @@ snippet_insert AS (
     SELECT
         c.id,
         l.id,
-        'order_by',
-        $$SELECT
-    title,
-    published_year,
-    pages
-FROM books
-ORDER BY published_year DESC, pages ASC;$$,
-        'Sorts the result set of a SELECT query according to one or more columns or expressions in ascending or descending order. The ORDER BY clause appears after the WHERE clause or GROUP BY and HAVING clauses and before LIMIT or OFFSET if they are present. Multiple columns can be listed separated by commas where the leftmost column is the primary sort key and each following column is used to break ties and ASC or DESC can be specified independently for each sort key with ASC being the default. PostgreSQL supports the additional NULLS FIRST and NULLS LAST options to control the placement of null values in the sorted output. ORDER BY is critical for producing consistent and predictable results especially when combined with LIMIT for top N queries or pagination and without an ORDER BY the order of rows is not guaranteed. On large tables sorting benefits greatly from appropriate indexes on the ORDER BY columns.',
-        1,
+        '______',           -- TODO: snippet kind (slug)
+        $$____$$,           -- TODO: use example
+        '_____',            -- TODO: use example explenation
+        1,                  -- TODO: Example order
         TRUE
     FROM concept_lookup c
     CROSS JOIN sql_language l
@@ -112,8 +102,8 @@ source_insert AS (
     SELECT
         c.id,
         'manual',
-        'local://src/backend/queries/postgres/statements/DQL/order_by.sql',
-        'Manual seed for the order_by concept. File: src/backend/queries/postgres/statements/DQL/order_by.sql; purpose: DML example for ORDER BY statements.'
+        'local://src/backend/queries/postgres/statements/_____/______',             -- TODO: source uri
+        'Manual seed for the _______ concept. File: src/backend/queries/postgres/statements/____/____; purpose: DML example for ________ statements.'       -- TODO: note
     FROM concept_lookup c
     ON CONFLICT DO NOTHING
     RETURNING id
@@ -135,12 +125,12 @@ INSERT INTO import_runs (
     notes
 )
 VALUES (
-    'src/backend/queries/postgres/statements/DML/insert_into.sql',
+    'src/backend/queries/postgres/statements/______/______',        -- TODO: Source name (reletive location)
     'sql',
     now(),
     now(),
     'success',
-    'Loaded SQL ORDER BY statement concept, aliases, tags, snippet, and source.'
+    'Loaded SQL ________ statement concept, aliases, tags, snippet, and source.'        -- TODO: note
 );
 
 -- ROLLBACK;
