@@ -13,7 +13,7 @@ WITH concept_row AS (
     VALUES (
         'cross_join',
         'SQL CROSS JOIN',
-        'dml',
+        'dql',
         'SQL statement used to combine every row from table A to every row from table B',
         TRUE
     )

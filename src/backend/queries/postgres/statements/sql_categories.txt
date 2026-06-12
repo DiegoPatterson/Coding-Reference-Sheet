@@ -1,4 +1,4 @@
 The existing split makes sense:
 • ddl → structure definition (CREATE, ALTER, DROP, etc.)
 • dml → data modification (INSERT, UPDATE, DELETE)
-• query → data retrieval / read operations (SELECT, and things like WITH queries, etc.)
+• dql → data retrieval / read operations (SELECT, and things like WITH queries, etc.)
